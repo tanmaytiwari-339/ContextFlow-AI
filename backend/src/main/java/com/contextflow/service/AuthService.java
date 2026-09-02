@@ -1,14 +1,17 @@
 package com.contextflow.service;
 import com.contextflow.entity.User;
 import com.contextflow.repository.UserRepository;
+import com.contextflow.security.JwtService;
 import com.contextflow.dto.RegisterRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
     private final UserRepository userRepository;
-    public AuthService(UserRepository userRepository){
+    private final JwtService jwtService;
+    public AuthService(UserRepository userRepository,JwtService jwtService){
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
     private final BCryptPasswordEncoder passwordEncoder =
             new BCryptPasswordEncoder();
@@ -23,9 +26,8 @@ public class AuthService {
         if(!passwordEncoder.matches(password,user.getPassword())){
             return "Invalid password";
         }
-        return "Login successful";
-
-
+        return jwtService.generateToken(user);
+        
     }
     public String register(RegisterRequest request){
         if(userRepository.findByEmployeeId(request.getEmployeeId()).isPresent()){
@@ -41,5 +43,4 @@ public class AuthService {
         userRepository.save(user);
         return "Employee registered successfully";
     }
-
 }

@@ -2,7 +2,6 @@ package com.contextflow.controller;
 
 import com.contextflow.dto.LoginRequest;
 import com.contextflow.dto.RegisterRequest;
-import com.contextflow.entity.User;
 import com.contextflow.service.AuthService;
 import org.springframework.web.bind.annotation.*;
 

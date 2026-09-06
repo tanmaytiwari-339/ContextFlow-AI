@@ -3,18 +3,20 @@ import com.contextflow.entity.User;
 import com.contextflow.repository.UserRepository;
 import com.contextflow.security.JwtService;
 import com.contextflow.dto.RegisterRequest;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 @Service
 public class AuthService {
+    private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    public AuthService(UserRepository userRepository,JwtService jwtService){
+    public AuthService(UserRepository userRepository,JwtService jwtService, PasswordEncoder passwordEncoder){
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
     }
-    private final BCryptPasswordEncoder passwordEncoder =
-            new BCryptPasswordEncoder();
+    
     public String login(String employeeId,String password){
 
         User user = userRepository

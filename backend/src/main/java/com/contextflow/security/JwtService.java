@@ -25,7 +25,6 @@ public class JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(secret);   
         return Keys.hmacShaKeyFor(keyBytes);
     }
-
     public String generateToken(User user){
         
         return Jwts.builder()
@@ -35,8 +34,31 @@ public class JwtService {
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())
                 .compact(); 
+    }
+    public String extractEmployeeId(String token){
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+    public boolean isTokenValid(String token,User user){
+        try{
+            String employeeId = extractEmployeeId(token);
+            return employeeId.equals(user.getEmployeeId()) && !isTokenExpired(token);
+        } catch(Exception e){
+            return false;
+        }
+    }
+    private boolean isTokenExpired(String token){
+        Date expirationDate = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+        return expirationDate.before(new Date());
 
     }
-
-    
 }

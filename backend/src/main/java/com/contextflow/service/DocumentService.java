@@ -82,4 +82,16 @@ public class DocumentService {
         return documentRepository.findByUser(loggedInUser);
     }
 
+    public void deleteDocument(long id) throws IOException{
+
+        User loggedInUser = getLoggedInUser();
+
+        Document document = documentRepository
+                .findByIdAndUser(id, loggedInUser)
+                .orElseThrow(() -> new RuntimeException("Document not found"));
+        Path filepath = Paths.get(document.getFilePath());
+        Files.deleteIfExists(filepath);
+        documentRepository.delete(document);
+    }
+
 }

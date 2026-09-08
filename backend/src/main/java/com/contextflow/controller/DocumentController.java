@@ -33,4 +33,9 @@ public class DocumentController {
             .map(DocumentResponse::new)
             .toList();
     }
+    @DeleteMapping("/{id}")
+    public String deleteDocument(@PathVariable Long id) throws IOException{
+        documentService.deleteDocument(id);
+        return "Document deleted successfully";
+    }
 }

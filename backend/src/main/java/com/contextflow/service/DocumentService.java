@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.contextflow.entity.Document;
+import com.contextflow.entity.DocumentStatus;
 import com.contextflow.entity.User;
 import com.contextflow.repository.DocumentRepository;
 
@@ -51,6 +53,28 @@ public class DocumentService {
             filePath
         );
         return filePath.toString();
+    }
+    public Document uploadDocument(MultipartFile file) throws IOException{
+        
+        String filePath = saveFile(file);
+
+        User loggedInUser = getLoggedInUser();
+
+        Document document = new Document();
+
+        document.setUser(loggedInUser);
+        document.setFileName(file.getOriginalFilename());
+        document.setFileType(file.getContentType());
+        document.setFileSize(file.getSize());
+        document.setFilePath(filePath);
+        document.setStatus(DocumentStatus.UPLOADED);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        document.setUploadedAt(now);
+        document.setUpdatedAt(now);
+
+        return documentRepository.save(document);
     }
 
 }

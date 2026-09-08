@@ -3,6 +3,8 @@ import java.io.IOException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.contextflow.dto.DocumentResponse;
+import com.contextflow.entity.Document;
 import com.contextflow.service.DocumentService;
 
 
@@ -17,9 +19,8 @@ public class DocumentController {
     }
     
     @PostMapping
-    public String uploadDocument(@RequestParam("file") MultipartFile file) throws IOException{
-        String path = documentService.saveFile(file);
-        return "File saved at: " + path;
+    public DocumentResponse uploadDocument(@RequestParam("file") MultipartFile file) throws IOException{
+        Document document = documentService.uploadDocument(file);
+        return new DocumentResponse(document);
     }
-    
 }

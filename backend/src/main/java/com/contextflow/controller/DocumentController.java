@@ -1,5 +1,5 @@
 package com.contextflow.controller;
-
+import java.io.IOException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,8 +17,9 @@ public class DocumentController {
     }
     
     @PostMapping
-    public String uploadDocument(@RequestParam("file") MultipartFile file){
-        return "Received: "+ file.getOriginalFilename();
+    public String uploadDocument(@RequestParam("file") MultipartFile file) throws IOException{
+        String path = documentService.saveFile(file);
+        return "File saved at: " + path;
     }
     
 }

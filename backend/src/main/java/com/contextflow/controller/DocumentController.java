@@ -2,6 +2,9 @@ package com.contextflow.controller;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,5 +40,12 @@ public class DocumentController {
     public String deleteDocument(@PathVariable Long id) throws IOException{
         documentService.deleteDocument(id);
         return "Document deleted successfully";
+    }
+    @GetMapping("/{id}/download")
+    public ResponseEntity<Resource> downloadDocument(@PathVariable Long id){
+        Resource resource = documentService.getDocumentFile(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(resource);
     }
 }

@@ -7,6 +7,8 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import com.contextflow.entity.Document;
 import com.contextflow.entity.DocumentStatus;
 import com.contextflow.entity.User;
 import com.contextflow.repository.DocumentRepository;
+
 
 
 
@@ -92,6 +95,24 @@ public class DocumentService {
         Path filepath = Paths.get(document.getFilePath());
         Files.deleteIfExists(filepath);
         documentRepository.delete(document);
+    }
+    public Resource getDocumentFile(Long id){
+
+        User loggedInUser = getLoggedInUser();
+
+        Document document = documentRepository
+                .findByIdAndUser(id, loggedInUser)
+                .orElseThrow(() ->
+                        new RuntimeException("Document not found"));
+
+        Path path = Paths.get(document.getFilePath());
+        if (!Files.exists(path)) {
+            throw new RuntimeException("File not found");
+        }
+
+        return new FileSystemResource(path);
+        
+
     }
 
 }

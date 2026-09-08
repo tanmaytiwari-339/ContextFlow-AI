@@ -1,5 +1,7 @@
 package com.contextflow.controller;
 import java.io.IOException;
+import java.util.List;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,5 +24,13 @@ public class DocumentController {
     public DocumentResponse uploadDocument(@RequestParam("file") MultipartFile file) throws IOException{
         Document document = documentService.uploadDocument(file);
         return new DocumentResponse(document);
+    }
+    @GetMapping
+    public List<DocumentResponse> getMyDocuments(){
+
+        return documentService.getMyDocuments()
+            .stream()
+            .map(DocumentResponse::new)
+            .toList();
     }
 }

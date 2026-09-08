@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -75,6 +76,10 @@ public class DocumentService {
         document.setUpdatedAt(now);
 
         return documentRepository.save(document);
+    }
+    public List<Document> getMyDocuments(){
+        User loggedInUser = getLoggedInUser();
+        return documentRepository.findByUser(loggedInUser);
     }
 
 }

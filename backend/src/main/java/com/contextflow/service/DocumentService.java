@@ -26,9 +26,11 @@ import com.contextflow.repository.DocumentRepository;
 public class DocumentService {
 
     private final DocumentRepository documentRepository;
+    private final PdfTextExtractor pdfTextExtractor;
 
-    public DocumentService(DocumentRepository documentRepository){
+    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor){
         this.documentRepository = documentRepository;
+        this.pdfTextExtractor = pdfTextExtractor;
     }
 
     public User getLoggedInUser(){
@@ -61,9 +63,10 @@ public class DocumentService {
     public Document uploadDocument(MultipartFile file) throws IOException{
         
         String filePath = saveFile(file);
-
         User loggedInUser = getLoggedInUser();
 
+        String extractedText = pdfTextExtractor.extractText(filePath);
+        
         Document document = new Document();
 
         document.setUser(loggedInUser);
@@ -71,6 +74,7 @@ public class DocumentService {
         document.setFileType(file.getContentType());
         document.setFileSize(file.getSize());
         document.setFilePath(filePath);
+        document.setContent(extractedText);
         document.setStatus(DocumentStatus.UPLOADED);
 
         LocalDateTime now = LocalDateTime.now();
@@ -111,8 +115,7 @@ public class DocumentService {
         }
 
         return new FileSystemResource(path);
-        
-
     }
+
 
 }

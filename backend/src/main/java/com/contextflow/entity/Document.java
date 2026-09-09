@@ -29,6 +29,9 @@ public class Document {
     @Column(name = "file_path",nullable = false)
     private String filePath;
 
+    @Column(columnDefinition = "LONGTEXT")
+    private String content;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable=false)
     private DocumentStatus status;
@@ -72,6 +75,12 @@ public class Document {
     }
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+    public String getContent(){
+        return content;
+    }
+    public void setContent(String content){
+        this.content = content;
     }
     public DocumentStatus getStatus() {
         return status; 

@@ -19,9 +19,6 @@ import com.contextflow.entity.DocumentStatus;
 import com.contextflow.entity.User;
 import com.contextflow.repository.DocumentRepository;
 
-
-
-
 @Service
 public class DocumentService {
 
@@ -113,9 +110,6 @@ public class DocumentService {
         if (!Files.exists(path)) {
             throw new RuntimeException("File not found");
         }
-
         return new FileSystemResource(path);
     }
-
-
 }

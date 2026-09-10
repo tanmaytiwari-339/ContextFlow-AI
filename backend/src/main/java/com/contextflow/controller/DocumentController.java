@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.contextflow.dto.DocumentResponse;
+import com.contextflow.dto.SummaryResponse;
 import com.contextflow.entity.Document;
 import com.contextflow.service.DocumentService;
 
@@ -47,5 +48,13 @@ public class DocumentController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(resource);
+    }
+
+    @PostMapping("/{id}/summary")
+    public SummaryResponse summarizeDocument(@PathVariable Long id){
+        
+        String summary = documentService.summarizeDocument(id);
+
+        return new SummaryResponse(id, summary);
     }
 }

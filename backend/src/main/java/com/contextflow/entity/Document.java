@@ -32,6 +32,9 @@ public class Document {
     @Column(columnDefinition = "LONGTEXT")
     private String content;
 
+    @Column(columnDefinition = "LONGTEXT")
+    private String summary;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable=false)
     private DocumentStatus status;
@@ -81,6 +84,13 @@ public class Document {
     }
     public void setContent(String content){
         this.content = content;
+    }
+    public String getSummary() {
+        return summary;
+    }
+
+    public void setSummary(String summary) {
+        this.summary = summary;
     }
     public DocumentStatus getStatus() {
         return status; 

@@ -24,10 +24,13 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final PdfTextExtractor pdfTextExtractor;
+    private final GeminiService geminiService;
 
-    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor){
+
+    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor,GeminiService geminiService){
         this.documentRepository = documentRepository;
         this.pdfTextExtractor = pdfTextExtractor;
+        this.geminiService = geminiService;
     }
 
     public User getLoggedInUser(){
@@ -111,5 +114,40 @@ public class DocumentService {
             throw new RuntimeException("File not found");
         }
         return new FileSystemResource(path);
+    }
+    public String summarizeDocument(Long id){
+
+        User loggedInUser = getLoggedInUser();
+
+        Document document = documentRepository
+            .findByIdAndUser(id, loggedInUser)
+            .orElseThrow(()-> new RuntimeException("Document not found"));
+        
+        String content = document.getContent();
+
+        if(content==null || content.isBlank()){
+            throw new RuntimeException("Document has no extracted text");
+        }
+        String prompt = """
+                Summarize the following document.
+
+                Give:
+                1. A short overall summary
+                2. The main points
+                3. Important information or conclusions
+
+                Keep the summary clear and concise.
+
+                Document:
+                """ + content;
+        String summary = geminiService.generateResponse(prompt);
+
+        document.setSummary(summary);
+
+        document.setUpdatedAt(LocalDateTime.now());
+
+        documentRepository.save(document);
+        return geminiService.generateResponse(prompt);
+        
     }
 }

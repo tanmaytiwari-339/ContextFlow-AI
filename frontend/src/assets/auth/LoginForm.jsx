@@ -1,6 +1,45 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 function LoginForm() {
+
+  const [employeeId, setEmployeeId] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch("http://localhost:8081/api/auth/login",{
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employeeId: employeeId,
+          password: password,
+        }),
+      });
+      const data = await response.text();
+      if(response.ok){
+        if (data === "Invalid password" || data === "Employee not found") {
+            console.log("Login failed:", data);
+            return;
+        }
+        localStorage.setItem("token",data);
+        console.log("Login successful");
+        console.log("JWT:",data);
+      }else{
+        console.log("Login failed:",data);
+      }
+
+      
+    } catch (error){
+      console.error("Error connecting to backend:", error);
+
+    }
+  };
+
   return (
     <div className="w-full max-w-md">
 
@@ -12,7 +51,7 @@ function LoginForm() {
         Login to access your workspace
       </p>
 
-      <form className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5">
 
         <div>
           <label className="block text-sm font-medium mb-2">
@@ -22,6 +61,8 @@ function LoginForm() {
           <input
             type="text"
             placeholder="EMP001"
+            value={employeeId}
+            onChange={(e) => setEmployeeId(e.target.value)}
             className="
               w-full
               border
@@ -44,6 +85,8 @@ function LoginForm() {
           <input
             type="password"
             placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="
               w-full
               border

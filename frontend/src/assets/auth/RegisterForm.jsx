@@ -1,6 +1,42 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 function RegisterForm() {
+
+  const [employeeId, setEmployeeId] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("EMPLOYEE");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try{
+      const response = await fetch("http://localhost:8081/api/auth/register",{
+        method:"POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          employeeId: employeeId,
+          name: name,
+          password: password,
+          role: role,
+        }),
+      }
+
+    );
+
+    const data = await response.text();
+    if(response.ok){
+      console.log("Registration:", data);
+    }else {
+      console.log("Registration failed:", data);
+    }
+    
+  } catch (error){
+    console.error("Error connecting to backend:", error);
+  }
+};
   return (
     <div className="w-full max-w-md">
 
@@ -12,11 +48,13 @@ function RegisterForm() {
         Join ContextFlow AI
       </p>
 
-      <form className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
 
         <input
           type="text"
           placeholder="Employee ID"
+          value={employeeId}
+          onChange={(e) => setEmployeeId(e.target.value)}
           className="
             w-full
             border
@@ -33,6 +71,8 @@ function RegisterForm() {
         <input
           type="text"
           placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           className="
             w-full
             border
@@ -49,6 +89,8 @@ function RegisterForm() {
         <input
           type="password"
           placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className="
             w-full
             border
@@ -63,6 +105,8 @@ function RegisterForm() {
         />
 
         <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
           className="
             w-full
             border

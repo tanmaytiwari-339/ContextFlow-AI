@@ -1,10 +1,11 @@
-import RegisterForm from "../../components/auth/RegisterForm";
+import AuthLayout from "../../assets/auth/AuthLayout";
+import RegisterForm from "../../assets/auth/RegisterForm";
 
 function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
+    <AuthLayout>
       <RegisterForm />
-    </div>
+    </AuthLayout>
   );
 }
 

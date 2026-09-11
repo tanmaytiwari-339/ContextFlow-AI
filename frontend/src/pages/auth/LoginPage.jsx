@@ -1,10 +1,11 @@
-import LoginForm from "../../components/auth/LoginForm";
+import AuthLayout from "../../assets/auth/AuthLayout";
+import LoginForm from "../../assets/auth/LoginForm";
 
 function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
+    <AuthLayout>
       <LoginForm />
-    </div>
+    </AuthLayout>
   );
 }
 

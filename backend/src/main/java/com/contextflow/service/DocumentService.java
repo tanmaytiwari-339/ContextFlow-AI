@@ -147,7 +147,7 @@ public class DocumentService {
         document.setUpdatedAt(LocalDateTime.now());
 
         documentRepository.save(document);
-        return geminiService.generateResponse(prompt);
+        return summary;
         
     }
 }

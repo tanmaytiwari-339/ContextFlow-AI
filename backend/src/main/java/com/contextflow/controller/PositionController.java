@@ -8,7 +8,7 @@ import com.contextflow.entity.Position;
 import com.contextflow.service.PositionService;
 
 @RestController
-@RequestMapping("/api/positions")
+@RequestMapping("/api/admin/positions")
 public class PositionController {
 
     private final PositionService positionService;

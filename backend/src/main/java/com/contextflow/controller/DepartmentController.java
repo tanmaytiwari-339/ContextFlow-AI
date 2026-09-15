@@ -8,7 +8,7 @@ import com.contextflow.entity.Department;
 import com.contextflow.service.DepartmentService;
 
 @RestController 
-@RequestMapping("/api/departments")
+@RequestMapping("/api/admin/departments")
 public class DepartmentController {
 
     private final DepartmentService departmentService;

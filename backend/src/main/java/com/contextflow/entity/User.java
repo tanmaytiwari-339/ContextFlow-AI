@@ -16,6 +16,9 @@ public class User {
     @Column(nullable = false)
     private String password;
     private String role;
+
+    @Column(nullable = false)
+    private boolean active = true;
     
     @ManyToOne 
     @JoinColumn(name = "department_id")
@@ -78,6 +81,13 @@ public class User {
 
     public void setPosition(Position position) {
         this.position = position;
+    }
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
   
 }

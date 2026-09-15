@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.contextflow.dto.CreateEmployeeRequest;
 import com.contextflow.dto.EmployeeResponse;
 import com.contextflow.dto.UpdateEmployeeRequest;
+import com.contextflow.dto.UpdateEmployeeStatusRequest;
 import com.contextflow.entity.Department;
 import com.contextflow.entity.Position;
 import com.contextflow.entity.User;
@@ -69,7 +70,7 @@ public class EmployeeService {
 
     }
     public List<User> getAllEmployee(){
-        return userRepository.findAll();
+        return userRepository.findByRole("EMPLOYEE");
     }
     public EmployeeResponse getEmployeeById(Long id) {
 
@@ -96,6 +97,17 @@ public class EmployeeService {
         userRepository.save(user);
 
         return new EmployeeResponse(user);
+    }
+    public EmployeeResponse updateEmployeeStatus(Long id, UpdateEmployeeStatusRequest request){
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        user.setActive(request.isActive());
+
+        userRepository.save(user);
+
+        return new EmployeeResponse(user);
+        
     }
 
 }

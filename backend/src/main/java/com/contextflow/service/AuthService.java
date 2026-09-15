@@ -25,6 +25,9 @@ public class AuthService {
         if(user == null){
             return "Employee not found";
         }
+        if(!user.isActive()){
+            return "Employee account is deactivated";
+        }
         if(!passwordEncoder.matches(password,user.getPassword())){
             return "Invalid password";
         }

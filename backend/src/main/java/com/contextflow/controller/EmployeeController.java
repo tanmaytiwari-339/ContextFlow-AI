@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.web.bind.annotation.*;
 import com.contextflow.dto.EmployeeResponse;
 import com.contextflow.dto.UpdateEmployeeRequest;
+import com.contextflow.dto.UpdateEmployeeStatusRequest;
 import com.contextflow.dto.CreateEmployeeRequest;
 import com.contextflow.service.EmployeeService;
 
@@ -41,5 +42,12 @@ public class EmployeeController {
             @RequestBody UpdateEmployeeRequest request) {
 
         return employeeService.updateEmployee(id, request);
+    }
+
+    @PutMapping("/{id}/status")
+    public EmployeeResponse updateEmployeeStatus(
+            @PathVariable Long id,
+            @RequestBody UpdateEmployeeStatusRequest request){
+        return employeeService.updateEmployeeStatus(id, request);
     }
 }

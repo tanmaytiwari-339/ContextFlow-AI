@@ -1,7 +1,10 @@
 package com.contextflow.controller;
 
-import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
+import org.springframework.web.bind.annotation.*;
+import com.contextflow.dto.EmployeeResponse;
+import com.contextflow.dto.UpdateEmployeeRequest;
 import com.contextflow.dto.CreateEmployeeRequest;
 import com.contextflow.service.EmployeeService;
 
@@ -19,5 +22,24 @@ public class EmployeeController {
     public String createEmployee(@RequestBody CreateEmployeeRequest request){
         return employeeService.createEmployee(request);
     }
-    
+
+    @GetMapping 
+    public List<EmployeeResponse> getAllEmployees(){
+        return employeeService.getAllEmployee()
+                .stream()
+                .map(EmployeeResponse::new)
+                .toList();
+    }
+    @GetMapping("/{id}")
+    public EmployeeResponse getEmployeeById(@PathVariable Long id) {
+        return employeeService.getEmployeeById(id);
+    }
+
+    @PutMapping("/{id}")
+    public EmployeeResponse updateEmployee(
+            @PathVariable Long id,
+            @RequestBody UpdateEmployeeRequest request) {
+
+        return employeeService.updateEmployee(id, request);
+    }
 }

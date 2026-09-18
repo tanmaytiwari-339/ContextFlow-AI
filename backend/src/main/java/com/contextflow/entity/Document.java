@@ -110,6 +110,7 @@ public class Document {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+    
 } 
 
 

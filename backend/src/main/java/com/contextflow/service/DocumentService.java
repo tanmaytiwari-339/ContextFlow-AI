@@ -25,12 +25,14 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final PdfTextExtractor pdfTextExtractor;
     private final GeminiService geminiService;
+    private final DocumentAccessService documentAccessService;
 
 
-    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor,GeminiService geminiService){
+    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor,GeminiService geminiService,DocumentAccessService documentAccessService){
         this.documentRepository = documentRepository;
         this.pdfTextExtractor = pdfTextExtractor;
         this.geminiService = geminiService;
+        this.documentAccessService = documentAccessService;
     }
 
     public User getLoggedInUser(){
@@ -100,6 +102,7 @@ public class DocumentService {
         Files.deleteIfExists(filepath);
         documentRepository.delete(document);
     }
+
     public Resource getDocumentFile(Long id){
 
         User loggedInUser = getLoggedInUser();
@@ -109,20 +112,29 @@ public class DocumentService {
                 .orElseThrow(() ->
                         new RuntimeException("Document not found"));
 
+        if (!documentAccessService.canAccess(document, loggedInUser)) {
+            throw new RuntimeException("You do not have access to this document");
+        }
+
         Path path = Paths.get(document.getFilePath());
         if (!Files.exists(path)) {
             throw new RuntimeException("File not found");
         }
         return new FileSystemResource(path);
     }
+
     public String summarizeDocument(Long id){
 
         User loggedInUser = getLoggedInUser();
 
         Document document = documentRepository
-            .findByIdAndUser(id, loggedInUser)
-            .orElseThrow(()-> new RuntimeException("Document not found"));
+            .findById(id)
+            .orElseThrow(() -> new RuntimeException("Document not found"));
         
+        if (!documentAccessService.canAccess(document, loggedInUser)) {
+            throw new RuntimeException("You do not have access to this document");
+        }
+
         String content = document.getContent();
 
         if(content==null || content.isBlank()){
@@ -140,14 +152,16 @@ public class DocumentService {
 
                 Document:
                 """ + content;
+        
         String summary = geminiService.generateResponse(prompt);
 
         document.setSummary(summary);
-
         document.setUpdatedAt(LocalDateTime.now());
-
         documentRepository.save(document);
         return summary;
-        
+    }
+    public List<Document> getAccessibleDocuments(){
+        User loggedInUser = getLoggedInUser();
+        return documentAccessService.getAccessibleDocuments(loggedInUser);
     }
 }

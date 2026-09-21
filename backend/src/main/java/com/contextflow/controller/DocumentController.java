@@ -32,7 +32,7 @@ public class DocumentController {
     @GetMapping
     public List<DocumentResponse> getMyDocuments(){
 
-        return documentService.getMyDocuments()
+        return documentService.getAccessibleDocuments()
             .stream()
             .map(DocumentResponse::new)
             .toList();

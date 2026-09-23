@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,7 +19,6 @@ import com.contextflow.entity.Document;
 import com.contextflow.entity.DocumentStatus;
 import com.contextflow.entity.User;
 import com.contextflow.repository.DocumentRepository;
-
 @Service
 public class DocumentService {
 
@@ -58,7 +58,8 @@ public class DocumentService {
         Path filePath = uploadPath.resolve(file.getOriginalFilename());
         Files.copy(
             file.getInputStream(),
-            filePath
+            filePath,
+            StandardCopyOption.REPLACE_EXISTING
         );
         return filePath.toString();
     }
@@ -67,8 +68,6 @@ public class DocumentService {
         String filePath = saveFile(file);
         User loggedInUser = getLoggedInUser();
 
-        String extractedText = pdfTextExtractor.extractText(filePath);
-        
         Document document = new Document();
 
         document.setUser(loggedInUser);
@@ -76,14 +75,31 @@ public class DocumentService {
         document.setFileType(file.getContentType());
         document.setFileSize(file.getSize());
         document.setFilePath(filePath);
-        document.setContent(extractedText);
-        document.setStatus(DocumentStatus.UPLOADED);
 
         LocalDateTime now = LocalDateTime.now();
-
         document.setUploadedAt(now);
         document.setUpdatedAt(now);
 
+        document.setStatus(DocumentStatus.PROCESSING);
+
+        document = documentRepository.save(document);
+
+        try{
+            String extractedText = pdfTextExtractor.extractText(filePath);
+
+            document.setContent(extractedText);
+            document.setStatus(DocumentStatus.COMPLETED);
+
+        } catch (Exception e){
+            document.setStatus(DocumentStatus.FAILED);
+            document.setUpdatedAt(LocalDateTime.now());
+
+            documentRepository.save(document);
+
+            throw e;
+        }
+
+        document.setUpdatedAt(LocalDateTime.now());
         return documentRepository.save(document);
     }
     public List<Document> getMyDocuments(){

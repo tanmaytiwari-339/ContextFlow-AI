@@ -13,9 +13,11 @@ import com.contextflow.repository.DocumentChunkRepository;
 public class DocumentChunkService {
 
     private final DocumentChunkRepository documentChunkRepository;
+    private final EmbeddingService embeddingService;
 
-    public DocumentChunkService(DocumentChunkRepository documentChunkRepository){
+    public DocumentChunkService(DocumentChunkRepository documentChunkRepository,EmbeddingService embeddingService){
         this.documentChunkRepository = documentChunkRepository;
+        this.embeddingService = embeddingService;
     }
 
     public void createChunks(Document document) {
@@ -45,8 +47,16 @@ public class DocumentChunkService {
             chunk.setDocument(document);
             chunk.setChunkIndex(chunkIndex);
             chunk.setContent(chunkText);
+            float[] embedding = embeddingService.generateEmbedding(chunkText);
 
+            StringBuilder embeddingText = new StringBuilder();
+
+            for (float value : embedding) {
+                embeddingText.append(value).append(",");
+            }
+            chunk.setEmbedding(embeddingText.toString());
             chunks.add(chunk);
+
 
             chunkIndex++;
             if (end == text.length()) {

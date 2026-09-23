@@ -26,13 +26,14 @@ public class DocumentService {
     private final PdfTextExtractor pdfTextExtractor;
     private final GeminiService geminiService;
     private final DocumentAccessService documentAccessService;
+    private final DocumentChunkService documentChunkService;
 
-
-    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor,GeminiService geminiService,DocumentAccessService documentAccessService){
+    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor,GeminiService geminiService,DocumentAccessService documentAccessService, DocumentChunkService documentChunkService){
         this.documentRepository = documentRepository;
         this.pdfTextExtractor = pdfTextExtractor;
         this.geminiService = geminiService;
         this.documentAccessService = documentAccessService;
+        this.documentChunkService = documentChunkService;
     }
 
     public User getLoggedInUser(){
@@ -100,7 +101,9 @@ public class DocumentService {
         }
 
         document.setUpdatedAt(LocalDateTime.now());
-        return documentRepository.save(document);
+        document = documentRepository.save(document);
+        documentChunkService.createChunks(document);
+        return document;
     }
     public List<Document> getMyDocuments(){
         User loggedInUser = getLoggedInUser();

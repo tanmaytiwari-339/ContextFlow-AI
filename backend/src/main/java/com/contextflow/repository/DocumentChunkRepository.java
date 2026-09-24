@@ -11,4 +11,6 @@ public interface DocumentChunkRepository
         extends JpaRepository<DocumentChunk, Long> {
 
     List<DocumentChunk> findByDocument(Document document);
+
+    List<DocumentChunk> findAll();
 }

@@ -9,6 +9,7 @@ import DepartmentPage from "../pages/admin/DepartmentPage";
 import PositionPage from "../pages/admin/PositionPage";
 import DocumentPage from "../pages/admin/DocumentPage";
 import AccessControlPage from "../pages/admin/AccessControlPage";
+import AnalyticsPage from "../pages/admin/AnalyticsPage";
 
 import AdminLayout from "../components/layout/AdminLayout";
 
@@ -64,6 +65,14 @@ function AppRoutes() {
         element={
           <AdminLayout>
             <AccessControlPage />
+          </AdminLayout>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <AdminLayout>
+            <AnalyticsPage />
           </AdminLayout>
         }
       />

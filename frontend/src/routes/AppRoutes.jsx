@@ -6,6 +6,9 @@ import RegisterPage from "../pages/auth/RegisterPage";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import EmployeePage from "../pages/admin/EmployeePage";
 import DepartmentPage from "../pages/admin/DepartmentPage";
+import PositionPage from "../pages/admin/PositionPage";
+import DocumentPage from "../pages/admin/DocumentPage";
+import AccessControlPage from "../pages/admin/AccessControlPage";
 
 import AdminLayout from "../components/layout/AdminLayout";
 
@@ -15,7 +18,6 @@ function AppRoutes() {
       {/* Auth */}
       <Route path="/" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-
       {/* Admin */}
       <Route
         path="/admin"
@@ -25,7 +27,6 @@ function AppRoutes() {
           </AdminLayout>
         }
       />
-
       <Route
         path="/admin/employees"
         element={
@@ -34,12 +35,35 @@ function AppRoutes() {
           </AdminLayout>
         }
       />
-
       <Route
         path="/admin/departments"
         element={
           <AdminLayout>
             <DepartmentPage />
+          </AdminLayout>
+        }
+      />
+      <Route
+        path="/admin/positions"
+        element={
+          <AdminLayout>
+            <PositionPage />
+          </AdminLayout>
+        }
+      />
+      <Route
+        path="/admin/documents"
+        element={
+          <AdminLayout>
+            <DocumentPage />
+          </AdminLayout>
+        }
+      />
+      <Route
+        path="/admin/access-control"
+        element={
+          <AdminLayout>
+            <AccessControlPage />
           </AdminLayout>
         }
       />

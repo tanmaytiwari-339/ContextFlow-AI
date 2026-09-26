@@ -5,6 +5,7 @@ import RegisterPage from "../pages/auth/RegisterPage";
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import EmployeePage from "../pages/admin/EmployeePage";
+import DepartmentPage from "../pages/admin/DepartmentPage";
 
 import AdminLayout from "../components/layout/AdminLayout";
 
@@ -30,6 +31,15 @@ function AppRoutes() {
         element={
           <AdminLayout>
             <EmployeePage />
+          </AdminLayout>
+        }
+      />
+
+      <Route
+        path="/admin/departments"
+        element={
+          <AdminLayout>
+            <DepartmentPage />
           </AdminLayout>
         }
       />

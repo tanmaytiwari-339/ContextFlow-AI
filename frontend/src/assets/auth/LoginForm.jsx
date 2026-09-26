@@ -2,72 +2,44 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 
 function LoginForm() {
-
-  const [employeeId, setEmployeeId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const response = await fetch("http://localhost:8081/api/auth/login",{
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          employeeId: employeeId,
-          password: password,
-        }),
-      });
-      const data = await response.text();
-      if(response.ok){
-        if (data === "Invalid password" || data === "Employee not found") {
-            console.log("Login failed:", data);
-            return;
-        }
-        localStorage.setItem("token",data);
-        console.log("Login successful");
-        console.log("JWT:",data);
-      }else{
-        console.log("Login failed:",data);
-      }
-
-      
-    } catch (error){
-      console.error("Error connecting to backend:", error);
-
-    }
+    console.log("Admin login:", {
+      email,
+      password,
+    });
   };
 
   return (
     <div className="w-full max-w-md">
-
-      <h2 className="text-4xl font-bold text-slate-900 mb-2">
-        Welcome Back
+      <h2 className="mb-2 text-4xl font-bold text-slate-900">
+        Admin Login
       </h2>
 
-      <p className="text-slate-500 mb-8">
-        Login to access your workspace
+      <p className="mb-8 text-slate-500">
+        Login to access the admin panel
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Employee ID
+          <label className="mb-2 block text-sm font-medium">
+            Admin Email
           </label>
 
           <input
-            type="text"
-            placeholder="EMP001"
-            value={employeeId}
-            onChange={(e) => setEmployeeId(e.target.value)}
+            type="email"
+            placeholder="admin@contextflow.ai"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="
               w-full
+              rounded-lg
               border
               border-slate-300
-              rounded-lg
               px-4
               py-3
               outline-none
@@ -78,7 +50,7 @@ function LoginForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label className="mb-2 block text-sm font-medium">
             Password
           </label>
 
@@ -89,9 +61,9 @@ function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             className="
               w-full
+              rounded-lg
               border
               border-slate-300
-              rounded-lg
               px-4
               py-3
               outline-none
@@ -119,30 +91,28 @@ function LoginForm() {
           type="submit"
           className="
             w-full
-            bg-indigo-600
-            hover:bg-indigo-700
-            text-white
-            py-3
             rounded-lg
+            bg-indigo-600
+            py-3
             font-medium
+            text-white
             transition
+            hover:bg-indigo-700
           "
         >
-          Login
+          Login as Admin
         </button>
-
       </form>
 
       <p className="mt-6 text-center text-slate-600">
         Don't have an account?{" "}
         <Link
           to="/register"
-          className="text-indigo-600 font-medium"
+          className="font-medium text-indigo-600"
         >
           Register
         </Link>
       </p>
-
     </div>
   );
 }

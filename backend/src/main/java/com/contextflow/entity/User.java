@@ -16,6 +16,18 @@ public class User {
     @Column(nullable = false)
     private String password;
     private String role;
+
+    @Column(nullable = false)
+    private boolean active = true;
+    
+    @ManyToOne 
+    @JoinColumn(name = "department_id")
+    private Department department;
+
+    @ManyToOne
+    @JoinColumn(name = "position_id") 
+    private Position position;
+
     public Long getId() {
         return id;
     }
@@ -54,6 +66,28 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+    public Department getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(Department department) {
+        this.department = department;
+    }
+
+    public Position getPosition() {
+        return position;
+    }
+
+    public void setPosition(Position position) {
+        this.position = position;
+    }
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
   
 }

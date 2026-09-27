@@ -25,6 +25,9 @@ public class AuthService {
         if(user == null){
             return "Employee not found";
         }
+        if(!user.isActive()){
+            return "Employee account is deactivated";
+        }
         if(!passwordEncoder.matches(password,user.getPassword())){
             return "Invalid password";
         }
@@ -41,7 +44,7 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        user.setRole("USER");
+        user.setRole(request.getRole());
         userRepository.save(user);
         return "Employee registered successfully";
     }

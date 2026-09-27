@@ -1,5 +1,6 @@
 package com.contextflow.service;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +21,7 @@ public class GeminiService {
 
     public String generateResponse(String prompt){
 
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key="+apiKey;
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key="+apiKey;
         Map<String,Object> requestBody = Map.of(
                 "contents", new Object[]{
                     Map.of(
@@ -37,7 +38,15 @@ public class GeminiService {
                 .retrieve()
                 .body(Map.class);
         
-        return response.toString();
+                List<Map<String,Object>> candidates = (List<Map<String,Object>>) response.get("candidates");
+                Map<String, Object> firstCandidate = candidates.get(0);
+                Map<String, Object> content = (Map<String, Object>) firstCandidate.get("content");
+                List<Map<String, String>> parts =
+                        (List<Map<String, String>>) content.get("parts");
+
+        return parts.get(0).get("text");
+
+        
 
     }
     

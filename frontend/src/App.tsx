@@ -9,12 +9,16 @@ import { KnowledgeChat } from './components/employee/KnowledgeChat';
 import { DocumentDetail } from './components/employee/DocumentDetail';
 import { EmployeeProfile } from './components/employee/EmployeeProfile';
 import { EmployeeActivity } from './components/employee/EmployeeActivity';
+import { AdminPage } from './components/admin/AdminPage';
 import { INITIAL_DOCUMENTS, INITIAL_EMPLOYEES } from './data/mockData';
 import { EmployeeView, DocumentItem, EmployeeItem } from './types';
 
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<EmployeeItem>(INITIAL_EMPLOYEES[0]);
+  const [currentPortal, setCurrentPortal] = useState<'employee' | 'admin'>('employee');
+  const [currentUser, setCurrentUser] = useState<EmployeeItem>(
+    INITIAL_EMPLOYEES.find((e) => e.empId === 'EMP1005') || INITIAL_EMPLOYEES[0]
+  );
   const [activeEmployeeView, setActiveEmployeeView] = useState<EmployeeView>('dashboard');
   const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
   const [selectedDocId, setSelectedDocId] = useState<string>('doc-1');
@@ -28,14 +32,16 @@ export function App() {
     setActiveEmployeeView('document-detail');
   };
 
-  const handleLogin = (employee: EmployeeItem) => {
-    setCurrentUser(employee);
+  const handleLogin = (user: EmployeeItem, portal: 'employee' | 'admin' = 'employee') => {
+    setCurrentUser(user);
+    setCurrentPortal(portal);
     setIsAuthenticated(true);
     setActiveEmployeeView('dashboard');
   };
 
   const handleSignOut = () => {
     setIsAuthenticated(false);
+    setCurrentPortal('employee');
   };
 
   // If user is not yet logged in, display the SaaS landing page with login details
@@ -43,7 +49,17 @@ export function App() {
     return <LandingPage onLogin={handleLogin} />;
   }
 
-  // Once authenticated, navigate directly to their personal employee dashboard & workspace
+  // If user logged in as Admin, display the isolated Admin side (blank workspace page)
+  if (currentPortal === 'admin') {
+    return (
+      <AdminPage
+        currentUser={currentUser}
+        onSignOut={handleSignOut}
+      />
+    );
+  }
+
+  // Once authenticated as Employee, navigate to the employee workspace
   return (
     <div className={`min-h-screen ${darkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-[#F4F7FB] text-slate-800'}`}>
       {/* Top Navbar */}

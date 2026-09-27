@@ -13,17 +13,22 @@ import {
   AlertCircle,
   HelpCircle,
   Zap,
-  FileText
+  FileText,
+  Shield,
+  User,
+  Fingerprint,
+  ChevronRight
 } from 'lucide-react';
 import { BrandLogo } from '../common/Illustrations';
 import { EmployeeItem } from '../../types';
 import { INITIAL_EMPLOYEES } from '../../data/mockData';
 
 interface LandingPageProps {
-  onLogin: (employee: EmployeeItem) => void;
+  onLogin: (employee: EmployeeItem, portal: 'employee' | 'admin') => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
+  const [loginMode, setLoginMode] = useState<'employee' | 'admin'>('employee');
   const [identifier, setIdentifier] = useState('tanmay.tiwari@company.com');
   const [password, setPassword] = useState('••••••••••••');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,29 +38,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const [successEmployee, setSuccessEmployee] = useState<EmployeeItem | null>(null);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
+  const handleSwitchMode = (mode: 'employee' | 'admin') => {
+    setLoginMode(mode);
+    setErrorMessage('');
+    if (mode === 'admin') {
+      setIdentifier('admin@company.com');
+      setPassword('••••••••••••');
+    } else {
+      setIdentifier('tanmay.tiwari@company.com');
+      setPassword('••••••••••••');
+    }
+  };
+
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
     if (!identifier.trim()) {
-      setErrorMessage('Please enter your corporate email or employee ID.');
+      setErrorMessage(
+        loginMode === 'admin'
+          ? 'Please enter your administrator email or admin ID.'
+          : 'Please enter your corporate email or employee ID.'
+      );
       return;
     }
 
     setIsLoading(true);
 
-    // Find matching employee by email or employee ID
-    const matched = INITIAL_EMPLOYEES.find(
+    const trimmed = identifier.trim().toLowerCase();
+
+    // Match employee by email or ID
+    let matched = INITIAL_EMPLOYEES.find(
       (emp) =>
-        emp.email.toLowerCase() === identifier.trim().toLowerCase() ||
-        emp.empId.toLowerCase() === identifier.trim().toLowerCase()
-    ) || INITIAL_EMPLOYEES[0];
+        emp.email.toLowerCase() === trimmed ||
+        emp.empId.toLowerCase() === trimmed
+    );
+
+    // If in admin mode or entered admin credentials
+    if (!matched) {
+      if (loginMode === 'admin' || trimmed.includes('admin') || trimmed === 'adm1001') {
+        matched = INITIAL_EMPLOYEES.find((emp) => emp.role === 'System Admin') || INITIAL_EMPLOYEES[0];
+      } else {
+        matched = INITIAL_EMPLOYEES.find((emp) => emp.empId === 'EMP1005') || INITIAL_EMPLOYEES[1];
+      }
+    }
+
+    const isTargetAdmin =
+      loginMode === 'admin' ||
+      matched?.role === 'System Admin' ||
+      trimmed.includes('admin') ||
+      trimmed === 'adm1001';
 
     setTimeout(() => {
       setIsLoading(false);
       setSuccessEmployee(matched);
       setTimeout(() => {
-        onLogin(matched);
+        onLogin(matched, isTargetAdmin ? 'admin' : 'employee');
       }, 400);
     }, 600);
   };
@@ -83,7 +122,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => {
+                handleSwitchMode(loginMode === 'admin' ? 'employee' : 'admin');
+                document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer shadow-2xs group ${
+                loginMode === 'admin'
+                  ? 'bg-slate-900 border-slate-700 text-white hover:bg-slate-800'
+                  : 'bg-indigo-50/90 border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300'
+              }`}
+              title={loginMode === 'admin' ? 'Switch to Employee Login' : 'Open Admin Portal Login'}
+            >
+              <Shield className={`w-3.5 h-3.5 ${loginMode === 'admin' ? 'text-indigo-400' : 'text-indigo-600'} group-hover:scale-110 transition-transform`} />
+              <span>{loginMode === 'admin' ? 'Employee Login' : 'Admin Portal'}</span>
+            </button>
             <button
               onClick={() => setShowHelpModal(true)}
               className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
@@ -177,21 +231,70 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        {/* Right Column: Dedicated SaaS Login Details Card (Work Credentials Only) */}
+        {/* Right Column: Dedicated SaaS Login Details Card (Employee & Admin Access) */}
         <div id="login-section" className="w-full max-w-md shrink-0">
           <div className="relative bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-200/50 p-6 sm:p-8 transition-all">
             
+            {/* Top Role Switcher: Employee Access vs Admin Portal */}
+            <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl mb-5 border border-slate-200/80 select-none">
+              <button
+                type="button"
+                onClick={() => handleSwitchMode('employee')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  loginMode === 'employee'
+                    ? 'bg-white text-blue-700 shadow-xs border border-slate-200/80'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-white/40'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Employee Login</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchMode('admin')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  loginMode === 'admin'
+                    ? 'bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xs border border-indigo-500/40'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-white/40'
+                }`}
+              >
+                <Shield className={`w-3.5 h-3.5 ${loginMode === 'admin' ? 'text-indigo-400' : 'text-slate-400'}`} />
+                <span>Admin Login</span>
+                <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-extrabold uppercase ${
+                  loginMode === 'admin' ? 'bg-indigo-500/40 text-indigo-200 border border-indigo-400/40' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  Root
+                </span>
+              </button>
+            </div>
+
             {/* Top Card Icon & Title */}
             <div className="text-center pb-5 border-b border-slate-100">
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/25 mb-3">
-                <Lock className="w-6 h-6" />
+              <div className={`w-12 h-12 mx-auto rounded-2xl text-white flex items-center justify-center shadow-md mb-3 transition-colors ${
+                loginMode === 'admin'
+                  ? 'bg-gradient-to-tr from-slate-900 via-indigo-900 to-slate-900 shadow-indigo-900/30 ring-4 ring-indigo-50'
+                  : 'bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-blue-500/25 ring-4 ring-blue-50'
+              }`}>
+                {loginMode === 'admin' ? (
+                  <Shield className="w-6 h-6 text-indigo-400" />
+                ) : (
+                  <Lock className="w-6 h-6 text-white" />
+                )}
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Sign in to your Workspace
+                {loginMode === 'admin' ? 'Administrator Portal' : 'Sign in to your Workspace'}
               </h2>
-              <p className="text-xs text-slate-500 mt-1">
-                Enter your work credentials to access your personal dashboard
+              <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                {loginMode === 'admin'
+                  ? 'Privileged console for document intelligence, security policies, and governance'
+                  : 'Enter your work credentials to access your personal dashboard'}
               </p>
+              {loginMode === 'admin' && (
+                <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <ShieldCheck className="w-3 h-3 text-indigo-600" />
+                  <span>Elevated Privileges</span>
+                </div>
+              )}
             </div>
 
             {/* Error Message */}
@@ -210,29 +313,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 </div>
                 <div>
                   <p className="font-bold">Welcome back, {successEmployee.name}!</p>
-                  <p className="text-[11px] text-emerald-700">Connecting to your personal dashboard...</p>
+                  <p className="text-[11px] text-emerald-700">
+                    Role: <span className="font-bold">{successEmployee.role}</span> · Opening your workspace...
+                  </p>
                 </div>
               </div>
             )}
 
             {/* Work Credentials Form */}
-            <form onSubmit={handleLoginSubmit} className="mt-6 space-y-4">
+            <form onSubmit={handleLoginSubmit} className="mt-5 space-y-4">
               {/* Corporate Email or Employee ID Input */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Corporate Email or Employee ID
+                  {loginMode === 'admin' ? 'Administrator Email or Admin ID' : 'Corporate Email or Employee ID'}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Mail className="w-4 h-4" />
+                    {loginMode === 'admin' ? (
+                      <Shield className="w-4 h-4 text-indigo-500" />
+                    ) : (
+                      <Mail className="w-4 h-4" />
+                    )}
                   </div>
                   <input
                     type="text"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="e.g. tanmay.tiwari@company.com or EMP1005"
+                    placeholder={
+                      loginMode === 'admin'
+                        ? 'e.g. admin@company.com or ADM1001'
+                        : 'e.g. tanmay.tiwari@company.com or EMP1005'
+                    }
                     required
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all font-medium"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all font-medium"
                   />
                 </div>
               </div>
@@ -259,9 +372,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your corporate password"
+                    placeholder={loginMode === 'admin' ? 'Enter administrator security key' : 'Enter your corporate password'}
                     required
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all font-medium"
+                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden transition-all font-medium"
                   />
                   <button
                     type="button"
@@ -285,10 +398,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded-md border-slate-300 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+                    className="w-4 h-4 text-indigo-600 rounded-md border-slate-300 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
                   />
                   <span className="text-xs text-slate-600 font-medium">
-                    Remember this device for 30 days
+                    {loginMode === 'admin' ? 'Keep admin session active' : 'Remember this device for 30 days'}
                   </span>
                 </label>
               </div>
@@ -297,28 +410,56 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               <button
                 type="submit"
                 disabled={isLoading || !!successEmployee}
-                className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-blue-500/25 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+                className={`w-full py-3 px-4 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed mt-2 ${
+                  loginMode === 'admin'
+                    ? 'bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 hover:from-slate-800 hover:to-indigo-800 shadow-indigo-950/20'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/25'
+                }`}
               >
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Verifying Work Credentials...</span>
+                    <span>{loginMode === 'admin' ? 'Authenticating Admin Security...' : 'Verifying Work Credentials...'}</span>
                   </>
                 ) : (
                   <>
-                    <span>Sign In with Work Credentials</span>
-                    <ArrowRight className="w-4 h-4" />
+                    {loginMode === 'admin' ? (
+                      <>
+                        <ShieldCheck className="w-4 h-4 text-indigo-300" />
+                        <span>Sign In as Administrator</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Sign In with Work Credentials</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </>
                 )}
               </button>
             </form>
 
-            {/* Card Security Footnote */}
-            <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-              <p className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                Protected by Enterprise 256-bit FIDO2 encryption
-              </p>
+            {/* Mode Switch Helper */}
+            <div className="mt-4 pt-3.5 border-t border-slate-100 text-center">
+              {loginMode === 'employee' ? (
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode('admin')}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                >
+                  <Shield className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Looking for Admin Console? Switch to Admin Login →</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode('employee')}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center justify-center gap-1 mx-auto cursor-pointer"
+                >
+                  <User className="w-3.5 h-3.5 text-blue-500" />
+                  <span>← Switch to Standard Employee Login</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -363,14 +504,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             </div>
 
             <div className="space-y-3 text-xs text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-              <p>
-                <strong>Employee ID or Email:</strong> Use your assigned corporate ID (e.g., <code className="text-blue-600 font-mono">EMP1005</code>) or corporate email (<code className="text-blue-600 font-mono">tanmay.tiwari@company.com</code>).
-              </p>
+              <div className="pb-2 border-b border-slate-200">
+                <p className="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Employee Login Access:</span>
+                </p>
+                <p>
+                  Use your assigned corporate ID (<code className="text-blue-600 font-mono">EMP1005</code>) or corporate email (<code className="text-blue-600 font-mono">tanmay.tiwari@company.com</code>).
+                </p>
+              </div>
+
+              <div className="pb-2 border-b border-slate-200">
+                <p className="font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Administrator Portal Access:</span>
+                </p>
+                <p>
+                  Admin credentials: <code className="text-indigo-600 font-mono">admin@company.com</code> or Admin ID <code className="text-indigo-600 font-mono">ADM1001</code> for full system administration privileges.
+                </p>
+              </div>
+
               <p>
                 <strong>Password Assistance:</strong> Passwords can be reset through corporate IT by submitting a request to <span className="text-blue-600 underline">it-helpdesk@company.com</span>.
               </p>
               <p>
-                <strong>Direct Sign-In:</strong> Click <strong>"Sign In with Work Credentials"</strong> to instantly enter your dashboard with your default credentials.
+                <strong>Direct Sign-In:</strong> Click <strong>"Sign In with Work Credentials"</strong> to instantly enter your personal workspace.
               </p>
             </div>
 

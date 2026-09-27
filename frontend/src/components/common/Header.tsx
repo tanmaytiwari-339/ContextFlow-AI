@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Bell, Sun, Moon, ChevronDown, User, LogOut, CheckCircle2 } from 'lucide-react';
+import { Search, Bell, Sun, Moon, ChevronDown, User, LogOut, CheckCircle2, Shield } from 'lucide-react';
 import { EmployeeView, EmployeeItem } from '../../types';
 import { BrandLogo } from './Illustrations';
 
@@ -25,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
+  const isSystemAdmin = currentUser?.role === 'System Admin' || currentUser?.role === 'Department Admin';
   const userName = currentUser?.name || 'Tanmay Tiwari';
   const userEmpId = currentUser?.empId || 'EMP1005';
   const userEmail = currentUser?.email || 'tanmay.tiwari@company.com';
@@ -181,11 +182,19 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* User Meta */}
             <div className="text-left hidden sm:block">
-              <p className="text-xs font-bold text-slate-800 leading-tight">
-                {userName}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-bold text-slate-800 leading-tight">
+                  {userName}
+                </p>
+                {isSystemAdmin && (
+                  <span className="px-1.5 py-0.2 rounded-md text-[9px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-800 border border-indigo-200 flex items-center gap-0.5">
+                    <Shield className="w-2.5 h-2.5 text-indigo-600" />
+                    Admin
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-slate-500 leading-none">
-                {userEmpId}
+                {userEmpId} · {currentUser?.role || 'Employee'}
               </p>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -201,9 +210,13 @@ export const Header: React.FC<HeaderProps> = ({
                 <p className="text-[11px] text-slate-500">
                   {userEmail}
                 </p>
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Active Employee
+                <div className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                  isSystemAdmin
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSystemAdmin ? 'bg-indigo-500' : 'bg-emerald-500'} animate-pulse`} />
+                  {currentUser?.role || 'Active Employee'}
                 </div>
               </div>
 

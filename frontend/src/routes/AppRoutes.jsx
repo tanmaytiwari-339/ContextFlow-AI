@@ -10,6 +10,7 @@ import PositionPage from "../pages/admin/PositionPage";
 import DocumentPage from "../pages/admin/DocumentPage";
 import AccessControlPage from "../pages/admin/AccessControlPage";
 import AnalyticsPage from "../pages/admin/AnalyticsPage";
+import ProfilePage from "../pages/admin/ProfilePage";
 
 import AdminLayout from "../components/layout/AdminLayout";
 
@@ -73,6 +74,15 @@ function AppRoutes() {
         element={
           <AdminLayout>
             <AnalyticsPage />
+          </AdminLayout>
+        }
+      />
+
+      <Route
+        path="/admin/profile"
+        element={
+          <AdminLayout>
+            <ProfilePage />
           </AdminLayout>
         }
       />

@@ -9,6 +9,7 @@ import {
   UserCircle,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -66,11 +67,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
         }`}
       >
         {sidebarOpen && (
-          <img
-            src={contextflowLogo}
-            alt="ContextFlow"
-            className="h-9 w-auto"
-          />
+          <img src={contextflowLogo} alt="ContextFlow" className="h-9 w-auto" />
         )}
 
         <button
@@ -78,11 +75,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-800 hover:text-white"
           title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
         >
-          {sidebarOpen ? (
-            <ChevronLeft size={20} />
-          ) : (
-            <ChevronRight size={20} />
-          )}
+          {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
         </button>
       </div>
 
@@ -99,9 +92,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
               title={!sidebarOpen ? item.label : ""}
               className={({ isActive }) =>
                 `flex items-center rounded-lg py-3 text-sm font-medium transition ${
-                  sidebarOpen
-                    ? "gap-3 px-3"
-                    : "justify-center px-0"
+                  sidebarOpen ? "gap-3 px-3" : "justify-center px-0"
                 } ${
                   isActive
                     ? "bg-indigo-600 text-white"
@@ -118,15 +109,14 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
       </nav>
 
       {/* Profile */}
+      {/* Profile + Logout */}
       <div className="absolute bottom-0 left-0 w-full border-t border-slate-800 p-3">
         <NavLink
           to="/admin/profile"
           title={!sidebarOpen ? "Profile" : ""}
           className={({ isActive }) =>
             `flex items-center rounded-lg py-3 text-sm font-medium transition ${
-              sidebarOpen
-                ? "gap-3 px-3"
-                : "justify-center px-0"
+              sidebarOpen ? "gap-3 px-3" : "justify-center px-0"
             } ${
               isActive
                 ? "bg-indigo-600 text-white"
@@ -138,6 +128,21 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
           {sidebarOpen && <span>Profile</span>}
         </NavLink>
+
+        <button
+          onClick={() => {
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          }}
+          title={!sidebarOpen ? "Logout" : ""}
+          className={`mt-1 flex w-full items-center rounded-lg py-3 text-sm font-medium text-slate-300 transition hover:bg-red-500/10 hover:text-red-400 ${
+            sidebarOpen ? "gap-3 px-3" : "justify-center px-0"
+          }`}
+        >
+          <LogOut size={20} />
+
+          {sidebarOpen && <span>Logout</span>}
+        </button>
       </div>
     </aside>
   );

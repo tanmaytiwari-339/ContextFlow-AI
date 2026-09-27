@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Sidebar from "./Sidebar";
+import AdminSidebar from "./AdminSidebar";
 import Topbar from "./Topbar";
 
 function AdminLayout({ children }) {
@@ -7,7 +7,7 @@ function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <Sidebar
+      <AdminSidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />

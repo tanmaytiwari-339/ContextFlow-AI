@@ -15,7 +15,7 @@ import {
 import { NavLink } from "react-router-dom";
 import contextflowLogo from "../../assets/images/contextflow-logo.png";
 
-function Sidebar({ sidebarOpen, setSidebarOpen }) {
+function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
   const menuItems = [
     {
       label: "Dashboard",
@@ -148,4 +148,4 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   );
 }
 
-export default Sidebar;
+export default AdminSidebar;

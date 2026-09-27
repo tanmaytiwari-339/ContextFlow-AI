@@ -1,0 +1,278 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 420" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EFF6FF" />
+      <stop offset="35%" stop-color="#F8FAFC" />
+      <stop offset="70%" stop-color="#E0F2FE" />
+      <stop offset="100%" stop-color="#EEF2FF" />
+    </linearGradient>
+
+    <radialGradient id="centerGlow" cx="55%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#BAE6FD" stop-opacity="0.45" />
+      <stop offset="50%" stop-color="#C7D2FE" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+
+    <linearGradient id="wave1" x1="0%" y1="30%" x2="100%" y2="70%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.2" />
+      <stop offset="50%" stop-color="#818CF8" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#C084FC" stop-opacity="0.25" />
+    </linearGradient>
+
+    <linearGradient id="wave2" x1="100%" y1="20%" x2="0%" y2="80%">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.2" />
+      <stop offset="60%" stop-color="#38BDF8" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Floor Reflection Gradient -->
+    <linearGradient id="floorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E2E8F0" stop-opacity="0.4" />
+      <stop offset="25%" stop-color="#CBD5E1" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#F8FAFC" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Card 1: PDF (White Glass) -->
+    <linearGradient id="pdfCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#F1F5F9" stop-opacity="0.8" />
+    </linearGradient>
+
+    <linearGradient id="pdfBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#E2E8F0" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#CBD5E1" stop-opacity="0.4" />
+    </linearGradient>
+
+    <!-- Card 2: DOC (Blue Tinted Glass) -->
+    <linearGradient id="docCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#93C5FD" stop-opacity="0.85" />
+      <stop offset="40%" stop-color="#60A5FA" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.7" />
+    </linearGradient>
+
+    <linearGradient id="docBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#DBEAFE" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#60A5FA" stop-opacity="0.5" />
+    </linearGradient>
+
+    <!-- Word Icon Gradient -->
+    <linearGradient id="wordBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="50%" stop-color="#1D4ED8" />
+      <stop offset="100%" stop-color="#1E40AF" />
+    </linearGradient>
+
+    <linearGradient id="wordLayerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+
+    <!-- Card 3: XLS (Mint/Green Glass) -->
+    <linearGradient id="xlsCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.92" />
+      <stop offset="60%" stop-color="#DCFCE7" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#BBF7D0" stop-opacity="0.75" />
+    </linearGradient>
+
+    <linearGradient id="xlsBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#86EFAC" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- Excel Icon Gradient -->
+    <linearGradient id="excelBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16A34A" />
+      <stop offset="50%" stop-color="#15803D" />
+      <stop offset="100%" stop-color="#166534" />
+    </linearGradient>
+
+    <!-- Card 4: Purple Background Sheet -->
+    <linearGradient id="sheetCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EDE9FE" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#DDD6FE" stop-opacity="0.5" />
+    </linearGradient>
+
+    <!-- 3D Spheres Gradients -->
+    <radialGradient id="sphereCyan" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#E0F2FE" />
+      <stop offset="25%" stop-color="#38BDF8" />
+      <stop offset="70%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0369A1" />
+    </radialGradient>
+
+    <radialGradient id="sphereMagenta" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FDF2F8" />
+      <stop offset="25%" stop-color="#F472B6" />
+      <stop offset="70%" stop-color="#DB2777" />
+      <stop offset="100%" stop-color="#9D174D" />
+    </radialGradient>
+
+    <radialGradient id="spherePurple" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#F5F3FF" />
+      <stop offset="25%" stop-color="#A78BFA" />
+      <stop offset="70%" stop-color="#7C3AED" />
+      <stop offset="100%" stop-color="#5B21B6" />
+    </radialGradient>
+
+    <radialGradient id="sphereBlue" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#EFF6FF" />
+      <stop offset="25%" stop-color="#60A5FA" />
+      <stop offset="70%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1E40AF" />
+    </radialGradient>
+
+    <!-- Soft Drop Shadows -->
+    <filter id="cardShadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#0F172A" flood-opacity="0.14" />
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0284C7" flood-opacity="0.08" />
+    </filter>
+
+    <filter id="subtleShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.08" />
+    </filter>
+
+    <filter id="glowLight" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Base Canvas Background -->
+  <rect width="1400" height="420" fill="url(#bgGrad)" />
+  <rect width="1400" height="420" fill="url(#centerGlow)" />
+
+  <!-- Ambient Wave Ribbons & Curves -->
+  <path d="M-100 280 C 200 120, 500 360, 900 140 C 1150 0, 1350 80, 1500 60 L 1500 420 L -100 420 Z" fill="url(#wave1)" />
+  <path d="M-50 160 C 300 320, 700 80, 1100 240 C 1300 320, 1420 280, 1500 260 L 1500 420 L -50 420 Z" fill="url(#wave2)" />
+
+  <!-- Flowing Orbital Glow Trails -->
+  <path d="M 320 220 C 380 90, 680 70, 880 120 C 1080 170, 1220 240, 1350 200" fill="none" stroke="#60A5FA" stroke-width="2.5" stroke-opacity="0.55" filter="url(#glowLight)" />
+  <path d="M 300 260 C 450 180, 720 160, 980 130 C 1140 110, 1260 160, 1380 130" fill="none" stroke="#C084FC" stroke-width="2" stroke-opacity="0.45" />
+  <path d="M 420 310 C 600 220, 850 250, 1050 210 C 1200 180, 1320 230, 1400 220" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-opacity="0.5" />
+
+  <!-- Floating 3D Colored Spheres / Beads along the curves -->
+  <!-- Top Left Cyan Sphere -->
+  <circle cx="440" cy="115" r="16" fill="url(#sphereCyan)" filter="url(#subtleShadow)" />
+  <!-- Magenta Sphere Behind Doc -->
+  <circle cx="760" cy="118" r="15" fill="url(#sphereMagenta)" filter="url(#subtleShadow)" />
+  <!-- Small Cyan Orb Top-Center -->
+  <circle cx="680" cy="160" r="10" fill="url(#sphereCyan)" />
+  <!-- Purple Orb Right -->
+  <circle cx="1060" cy="155" r="17" fill="url(#spherePurple)" filter="url(#subtleShadow)" />
+  <!-- Blue Orb Far Right -->
+  <circle cx="1120" cy="275" r="15" fill="url(#sphereBlue)" filter="url(#subtleShadow)" />
+  <!-- Small Magenta Orb -->
+  <circle cx="980" cy="120" r="8" fill="url(#sphereMagenta)" />
+
+  <!-- Reflective Ground Surface Floor Horizon -->
+  <rect x="0" y="340" width="1400" height="80" fill="url(#floorGrad)" />
+  <ellipse cx="780" cy="355" rx="420" ry="16" fill="#0284C7" fill-opacity="0.08" filter="url(#glowLight)" />
+
+  <!-- ============================================== -->
+  <!-- 3D CARDS GROUP                                 -->
+  <!-- ============================================== -->
+
+  <!-- CARD 4: Translucent Purple Background Sheet (Far Right) -->
+  <g transform="translate(900, 150) rotate(8)">
+    <rect x="0" y="0" width="170" height="210" rx="24" fill="url(#sheetCardGrad)" stroke="#C4B5FD" stroke-width="1.5" stroke-opacity="0.6" filter="url(#subtleShadow)" />
+    <!-- Text Lines Placeholder -->
+    <rect x="25" y="40" width="115" height="9" rx="4.5" fill="#A78BFA" fill-opacity="0.5" />
+    <rect x="25" y="60" width="95" height="7" rx="3.5" fill="#C4B5FD" fill-opacity="0.5" />
+    <rect x="25" y="78" width="105" height="7" rx="3.5" fill="#C4B5FD" fill-opacity="0.5" />
+    <rect x="25" y="96" width="75" height="7" rx="3.5" fill="#C4B5FD" fill-opacity="0.4" />
+    <rect x="25" y="114" width="110" height="7" rx="3.5" fill="#C4B5FD" fill-opacity="0.4" />
+    <rect x="25" y="132" width="60" height="7" rx="3.5" fill="#C4B5FD" fill-opacity="0.4" />
+  </g>
+
+  <!-- CARD 1: PDF Frosted Glass Card (Left) -->
+  <g transform="translate(360, 170) rotate(-6)" filter="url(#cardShadow)">
+    <!-- Base Frosted Glass Shape -->
+    <rect x="0" y="0" width="200" height="235" rx="30" fill="url(#pdfCardGrad)" stroke="url(#pdfBorderGrad)" stroke-width="2.5" />
+    
+    <!-- PDF Header Label -->
+    <text x="100" y="58" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="26" font-weight="900" fill="#E11D48" letter-spacing="1">PDF</text>
+    
+    <!-- Red Acrobat Stylized Logo -->
+    <g transform="translate(100, 125)">
+      <!-- Smooth Stylized Adobe Curves -->
+      <path d="M -30 35 C -25 15, -12 -5, 0 -28 C 12 -5, 25 15, 30 35 C 22 28, 8 20, 0 20 C -8 20, -22 28, -30 35 Z" fill="#EF4444" />
+      <path d="M -30 35 C -18 32, -8 24, 0 10 C 8 24, 18 32, 30 35 C 16 38, -16 38, -30 35 Z" fill="#DC2626" />
+      <circle cx="0" cy="-28" r="4.5" fill="#B91C1C" />
+    </g>
+
+    <!-- Translucent Bottom File Lines -->
+    <rect x="35" y="180" width="130" height="9" rx="4.5" fill="#E2E8F0" fill-opacity="0.9" />
+    <rect x="45" y="200" width="75" height="7" rx="3.5" fill="#CBD5E1" fill-opacity="0.75" />
+  </g>
+
+  <!-- CARD 2: DOC Frosted Glass Card (Center, Forward, Elevated) -->
+  <g transform="translate(535, 105) rotate(-1)" filter="url(#cardShadow)">
+    <!-- Translucent Glowing Glass Background -->
+    <rect x="0" y="0" width="215" height="255" rx="34" fill="url(#docCardGrad)" stroke="url(#docBorderGrad)" stroke-width="2.5" />
+    
+    <!-- Glossy Highlight across top border -->
+    <path d="M 2 34 Q 2 2, 34 2 L 181 2 Q 213 2, 213 34 L 213 80 Q 107 100, 2 80 Z" fill="#FFFFFF" fill-opacity="0.22" />
+
+    <!-- DOC Header Label -->
+    <text x="107" y="62" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF" letter-spacing="1.5">DOC</text>
+
+    <!-- Microsoft Word Icon Plaque -->
+    <g transform="translate(62, 85)">
+      <!-- Backing Document Layers -->
+      <rect x="15" y="0" width="75" height="68" rx="12" fill="url(#wordLayerGrad)" fill-opacity="0.6" />
+      <rect x="8" y="10" width="75" height="68" rx="12" fill="url(#wordLayerGrad)" fill-opacity="0.85" />
+      
+      <!-- Front Deep Blue Plaque with 'W' -->
+      <rect x="0" y="20" width="72" height="72" rx="16" fill="url(#wordBgGrad)" stroke="#60A5FA" stroke-width="1.5" filter="url(#subtleShadow)" />
+      
+      <!-- Iconic White 'W' -->
+      <text x="36" y="68" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" fill="#FFFFFF">W</text>
+    </g>
+
+    <!-- Translucent Document Preview Lines -->
+    <rect x="36" y="196" width="143" height="8" rx="4" fill="#FFFFFF" fill-opacity="0.6" />
+    <rect x="36" y="214" width="105" height="7" rx="3.5" fill="#FFFFFF" fill-opacity="0.45" />
+    <rect x="36" y="230" width="75" height="6" rx="3" fill="#FFFFFF" fill-opacity="0.3" />
+  </g>
+
+  <!-- CARD 3: XLS Frosted Glass Card (Right) -->
+  <g transform="translate(730, 160) rotate(5)" filter="url(#cardShadow)">
+    <!-- Base Shape -->
+    <rect x="0" y="0" width="195" height="235" rx="30" fill="url(#xlsCardGrad)" stroke="url(#xlsBorderGrad)" stroke-width="2.5" />
+
+    <!-- XLS Header Label -->
+    <text x="97" y="58" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="26" font-weight="900" fill="#047857" letter-spacing="1">XLS</text>
+
+    <!-- Microsoft Excel Icon Plaque -->
+    <g transform="translate(56, 85)">
+      <!-- Backing Spreadsheet Sheets -->
+      <rect x="12" y="0" width="68" height="60" rx="10" fill="#4ADE80" fill-opacity="0.5" />
+      <rect x="6" y="8" width="68" height="60" rx="10" fill="#22C55E" fill-opacity="0.75" />
+
+      <!-- Front Dark Green Plaque with 'X' -->
+      <rect x="0" y="16" width="66" height="66" rx="14" fill="url(#excelBgGrad)" stroke="#86EFAC" stroke-width="1.5" filter="url(#subtleShadow)" />
+
+      <!-- Iconic White 'X' -->
+      <text x="33" y="62" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="40" font-weight="900" fill="#FFFFFF">X</text>
+    </g>
+
+    <!-- Translucent Spreadsheet Rows -->
+    <rect x="32" y="180" width="131" height="8" rx="4" fill="#86EFAC" fill-opacity="0.7" />
+    <rect x="32" y="198" width="90" height="7" rx="3.5" fill="#86EFAC" fill-opacity="0.5" />
+  </g>
+
+  <!-- Foreground Floor Mirror Reflections (Faded) -->
+  <g opacity="0.28" transform="translate(0, 360) scale(1, -0.45)" filter="url(#glowLight)">
+    <!-- Reflected PDF Card -->
+    <rect x="360" y="-30" width="200" height="140" rx="20" fill="url(#pdfCardGrad)" />
+    <!-- Reflected DOC Card -->
+    <rect x="535" y="-60" width="215" height="180" rx="24" fill="url(#docCardGrad)" />
+    <!-- Reflected XLS Card -->
+    <rect x="730" y="-30" width="195" height="140" rx="20" fill="url(#xlsCardGrad)" />
+  </g>
+</svg>

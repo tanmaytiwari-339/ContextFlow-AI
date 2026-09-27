@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
-import contextflowLogo from "../../assets/images/contextflow-logo.png";
 
 function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
   const menuItems = [
@@ -60,22 +59,41 @@ function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
         sidebarOpen ? "w-64" : "w-20"
       }`}
     >
-      {/* Header */}
+      {/* Logo Section */}
       <div
-        className={`flex h-20 items-center border-b border-slate-800 ${
-          sidebarOpen ? "justify-between px-5" : "justify-center"
+        className={`h-20 border-b border-slate-800 flex items-center ${
+          sidebarOpen ? "justify-between px-4" : "justify-center"
         }`}
       >
         {sidebarOpen && (
-          <img src={contextflowLogo} alt="ContextFlow" className="h-9 w-auto" />
+          <div className="flex items-center gap-3">
+            {/* Logo */}
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <span className="text-lg font-bold text-white">C</span>
+            </div>
+
+            {/* Brand */}
+            <div>
+              <h1 className="text-lg font-bold text-white">
+                ContextFlow <span className="text-blue-400">AI</span>
+              </h1>
+
+              <p className="text-[10px] uppercase tracking-widest text-blue-300">
+                Knowledge Intelligence
+              </p>
+            </div>
+          </div>
         )}
 
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-800 hover:text-white"
-          title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
         >
-          {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+          {sidebarOpen ? (
+            <ChevronLeft size={20} />
+          ) : (
+            <ChevronRight size={20} />
+          )}
         </button>
       </div>
 
@@ -101,14 +119,12 @@ function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
               }
             >
               <Icon size={20} />
-
               {sidebarOpen && <span>{item.label}</span>}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* Profile */}
       {/* Profile + Logout */}
       <div className="absolute bottom-0 left-0 w-full border-t border-slate-800 p-3">
         <NavLink
@@ -125,7 +141,6 @@ function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
           }
         >
           <UserCircle size={20} />
-
           {sidebarOpen && <span>Profile</span>}
         </NavLink>
 
@@ -134,13 +149,11 @@ function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
             localStorage.removeItem("token");
             window.location.href = "/";
           }}
-          title={!sidebarOpen ? "Logout" : ""}
           className={`mt-1 flex w-full items-center rounded-lg py-3 text-sm font-medium text-slate-300 transition hover:bg-red-500/10 hover:text-red-400 ${
             sidebarOpen ? "gap-3 px-3" : "justify-center px-0"
           }`}
         >
           <LogOut size={20} />
-
           {sidebarOpen && <span>Logout</span>}
         </button>
       </div>

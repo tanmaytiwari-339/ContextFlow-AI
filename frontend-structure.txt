@@ -1,0 +1,46 @@
+Folder PATH listing for volume New Volume
+Volume serial number is 4E7B-579B
+D:\YASH\PROJECTS\MINI-PROJECT\CONTEXTFLOW-AI\FRONTEND\SRC
+|   App.jsx
+|   index.css
+|   main.jsx
+|   
++---assets
+|   +---auth
+|   |       auth-bg.png
+|   |       AuthLayout.jsx
+|   |       LoginForm.jsx
+|   |       RegisterForm.jsx
+|   |       
+|   \---images
+|           contextflow-logo.png
+|           hero.png
+|           vite.svg
+|           
++---components
+|   \---layout
+|           AdminLayout.jsx
+|           Sidebar.jsx
+|           Topbar.jsx
+|           
++---pages
+|   +---admin
+|   |       AccessControlPage.jsx
+|   |       AdminDashboard.jsx
+|   |       AnalyticsPage.jsx
+|   |       DepartmentPage.jsx
+|   |       DocumentPage.jsx
+|   |       EmployeePage.jsx
+|   |       PositionPage.jsx
+|   |       ProfilePage.jsx
+|   |       
+|   +---auth
+|   |       LoginPage.jsx
+|   |       RegisterPage.jsx
+|   |       
+|   \---dashboard
+|           DashboardPage.jsx
+|           
+\---routes
+        AppRoutes.jsx
+        

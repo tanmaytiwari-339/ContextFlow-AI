@@ -29,13 +29,21 @@ public class DocumentService {
     private final GeminiService geminiService;
     private final DocumentAccessService documentAccessService;
     private final DocumentChunkService documentChunkService;
+    private final ActivityService activityService;
 
-    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor,GeminiService geminiService,DocumentAccessService documentAccessService, DocumentChunkService documentChunkService){
+    public DocumentService(
+        DocumentRepository documentRepository,
+        PdfTextExtractor pdfTextExtractor,
+        GeminiService geminiService,
+        DocumentAccessService documentAccessService,
+        DocumentChunkService documentChunkService,
+        ActivityService activityService) {
         this.documentRepository = documentRepository;
         this.pdfTextExtractor = pdfTextExtractor;
         this.geminiService = geminiService;
         this.documentAccessService = documentAccessService;
         this.documentChunkService = documentChunkService;
+        this.activityService = activityService;
     }
 
     public User getLoggedInUser(){
@@ -111,7 +119,11 @@ public class DocumentService {
         access.setAccessType(AccessType.EMPLOYEE);
         access.setEmployee(loggedInUser);
         documentAccessService.createAccessRule(access);
-        
+        activityService.logActivity(
+                loggedInUser,
+                "DOCUMENT_UPLOADED",
+                "Uploaded document: " + document.getFileName()
+        );
         return document;
     }
     public List<Document> getMyDocuments(){

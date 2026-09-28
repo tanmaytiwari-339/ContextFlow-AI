@@ -33,7 +33,6 @@ export function App() {
         const response = await api.get('/api/documents');
 
         const backendDocuments = response.data;
-
         const mappedDocuments: DocumentItem[] = backendDocuments.map((doc: any) => ({
           id: String(doc.id),
           name: doc.fileName,
@@ -173,6 +172,7 @@ export function App() {
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
+        documents={documents}
         onSelectDoc={(doc) => {
           setSelectedDocId(doc.id);
           setActiveEmployeeView('document-detail');

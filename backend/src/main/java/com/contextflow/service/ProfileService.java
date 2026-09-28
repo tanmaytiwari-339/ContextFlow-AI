@@ -14,11 +14,14 @@ public class ProfileService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ActivityService activityService;
 
     public ProfileService(UserRepository userRepository,
-                      PasswordEncoder passwordEncoder) {
+                      PasswordEncoder passwordEncoder,
+                      ActivityService activityService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.activityService = activityService;
     }
 
     public User getProfile() {
@@ -30,7 +33,6 @@ public class ProfileService {
     }
 
     public User updateProfile(String name) {
-
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -38,7 +40,15 @@ public class ProfileService {
 
         user.setName(name);
 
-        return userRepository.save(user);
+        User updatedUser = userRepository.save(user);
+
+        activityService.logActivity(
+                user,
+                "PROFILE_UPDATED",
+                "Updated profile information"
+        );
+
+        return updatedUser;
     }
 
     public void changePassword(ChangePasswordRequest request) {
@@ -62,5 +72,10 @@ public class ProfileService {
         );
 
         userRepository.save(user);
+        activityService.logActivity(
+                user,
+                "PASSWORD_CHANGED",
+                "Changed account password"
+        );
     }
 }

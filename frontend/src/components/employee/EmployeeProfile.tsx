@@ -34,6 +34,7 @@ export const EmployeeProfile: React.FC<EmployeeProfileProps> = ({ currentUser })
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activities, setActivities] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -53,6 +54,17 @@ export const EmployeeProfile: React.FC<EmployeeProfileProps> = ({ currentUser })
     };
 
     fetchProfile();
+
+    const fetchActivities = async () => {
+    try {
+      const response = await api.get('/api/profile/activity');
+      setActivities(response.data);
+    } catch (error) {
+      console.error('Failed to load activities:', error);
+    }
+  };
+
+  fetchActivities();
   }, []);
 
   const handleSave = async () => {
@@ -102,13 +114,7 @@ export const EmployeeProfile: React.FC<EmployeeProfileProps> = ({ currentUser })
     }
   };
 
-  const activityList = [
-    { text: 'Logged in from Windows (Chrome)', time: 'Today, 10:24 AM', dotColor: 'bg-emerald-500' },
-    { text: 'Viewed Company Leave Policy.pdf', time: 'Today, 09:15 AM', dotColor: 'bg-emerald-500' },
-    { text: 'Asked a question in Knowledge Chat', time: 'Yesterday, 04:32 PM', dotColor: 'bg-blue-500' },
-    { text: 'Downloaded Engineering Guidelines.docx', time: 'Sep 10, 2025', dotColor: 'bg-blue-500' },
-    { text: 'Updated profile picture', time: 'Sep 08, 2025', dotColor: 'bg-emerald-500' },
-  ];
+  
 
   return (
     <div className="space-y-6">
@@ -433,14 +439,20 @@ export const EmployeeProfile: React.FC<EmployeeProfileProps> = ({ currentUser })
           </div>
 
           <div className="space-y-3">
-            {activityList.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-slate-50 last:border-0">
+            {activities.map((activity) => (
+              <div
+                key={activity.id}
+                className="flex items-center justify-between text-xs py-1 border-b border-slate-50 last:border-0"
+              >
                 <div className="flex items-center gap-2.5">
-                  <span className={`w-2 h-2 rounded-full ${item.dotColor} shrink-0`} />
-                  <span className="text-slate-700 font-medium">{item.text}</span>
+                  <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                  <span className="text-slate-700 font-medium">
+                    {activity.description}
+                  </span>
                 </div>
+
                 <span className="text-slate-400 text-[11px] shrink-0 font-medium">
-                  {item.time}
+                  {new Date(activity.createdAt).toLocaleString()}
                 </span>
               </div>
             ))}

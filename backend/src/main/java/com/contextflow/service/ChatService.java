@@ -3,7 +3,9 @@ package com.contextflow.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.contextflow.entity.User;
 import com.contextflow.entity.SearchResult;
 
 @Service
@@ -11,13 +13,22 @@ public class ChatService {
     
     private final DocumentSearchService documentSearchService;
     private final OllamaChatService ollamaChatService;
+    private final ActivityService activityService;
 
     public ChatService(
-            DocumentSearchService documentSearchService,
-            OllamaChatService ollamaChatService) {
+        DocumentSearchService documentSearchService,
+        OllamaChatService ollamaChatService,
+        ActivityService activityService) {
 
         this.documentSearchService = documentSearchService;
         this.ollamaChatService = ollamaChatService;
+        this.activityService = activityService;
+    }
+    private User getLoggedInUser() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return (User) authentication.getPrincipal();
     }
 
     public String askQuestion(String question){
@@ -63,6 +74,14 @@ public class ChatService {
                 %s
                 """.formatted(context, question);
 
-        return ollamaChatService.generateResponse(prompt);
+        String response = ollamaChatService.generateResponse(prompt);
+
+        activityService.logActivity(
+                getLoggedInUser(),
+                "CHAT_USED",
+                "Used Knowledge Chat"
+        );
+
+        return response;
     }
 }

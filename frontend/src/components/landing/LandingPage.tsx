@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import {
   Lock,
   Mail,
@@ -21,7 +22,7 @@ import {
 } from 'lucide-react';
 import { BrandLogo } from '../common/Illustrations';
 import { EmployeeItem } from '../../types';
-import { INITIAL_EMPLOYEES } from '../../data/mockData';
+
 
 interface LandingPageProps {
   onLogin: (employee: EmployeeItem, portal: 'employee' | 'admin') => void;
@@ -29,8 +30,8 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const [loginMode, setLoginMode] = useState<'employee' | 'admin'>('employee');
-  const [identifier, setIdentifier] = useState('tanmay.tiwari@company.com');
-  const [password, setPassword] = useState('••••••••••••');
+  const [identifier, setIdentifier] = useState('EMP1006');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,18 +43,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
     setLoginMode(mode);
     setErrorMessage('');
     if (mode === 'admin') {
-      setIdentifier('admin@company.com');
-      setPassword('••••••••••••');
+      setIdentifier('');
+      setPassword('');
     } else {
-      setIdentifier('tanmay.tiwari@company.com');
-      setPassword('••••••••••••');
+      setIdentifier('EMP1006');
+      setPassword('');
     }
   };
 
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessEmployee(null);
 
     if (!identifier.trim()) {
       setErrorMessage(
@@ -66,37 +68,65 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
     setIsLoading(true);
 
-    const trimmed = identifier.trim().toLowerCase();
+    try{
+      const response = await axios.post(
+        'http://localhost:8081/api/auth/login',
+        {
+          employeeId: identifier.trim(),
+          password: password,
+        }
+      );
 
-    // Match employee by email or ID
-    let matched = INITIAL_EMPLOYEES.find(
-      (emp) =>
-        emp.email.toLowerCase() === trimmed ||
-        emp.empId.toLowerCase() === trimmed
-    );
+      const token = response.data;
 
-    // If in admin mode or entered admin credentials
-    if (!matched) {
-      if (loginMode === 'admin' || trimmed.includes('admin') || trimmed === 'adm1001') {
-        matched = INITIAL_EMPLOYEES.find((emp) => emp.role === 'System Admin') || INITIAL_EMPLOYEES[0];
-      } else {
-        matched = INITIAL_EMPLOYEES.find((emp) => emp.empId === 'EMP1005') || INITIAL_EMPLOYEES[1];
-      }
-    }
+      localStorage.setItem('token',token);
 
-    const isTargetAdmin =
-      loginMode === 'admin' ||
-      matched?.role === 'System Admin' ||
-      trimmed.includes('admin') ||
-      trimmed === 'adm1001';
+      const payload = JSON.parse(atob(token.split('.')[1]));
 
-    setTimeout(() => {
-      setIsLoading(false);
-      setSuccessEmployee(matched);
+      const employeeId = payload.sub;
+      const backendRole = payload.role;
+
+      const employee: EmployeeItem = {
+        id: employeeId,
+        empId: employeeId,
+        name: employeeId,
+        email: '',
+        phone: '',
+        department: '',
+        position: '',
+        status: 'Active',
+        lastActive: new Date().toISOString(),
+        role: backendRole === 'EMPLOYEE' ? 'Employee' : 'System Admin',
+        accessScope:
+          backendRole === 'EMPLOYEE'
+            ? 'Personal Only'
+            : 'Organization Wide',
+      };
+
+      const portal = backendRole === 'EMPLOYEE' ? 'employee' : 'admin';
+
+      setSuccessEmployee(employee);
+
       setTimeout(() => {
-        onLogin(matched, isTargetAdmin ? 'admin' : 'employee');
+        onLogin(employee, portal);
       }, 400);
-    }, 600);
+      
+    }catch (error) {
+      console.error('Login failed:', error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          setErrorMessage('Invalid employee ID or password.');
+        } else {
+          setErrorMessage('Unable to connect to the backend server.');
+        }
+      } else {
+        setErrorMessage('Login failed. Please try again.');
+      }
+
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -12,5 +12,4 @@ public interface DocumentChunkRepository
 
     List<DocumentChunk> findByDocument(Document document);
 
-    List<DocumentChunk> findAll();
 }

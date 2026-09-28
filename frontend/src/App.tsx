@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState } from 'react';
+import api from './api/axios';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { SearchModal } from './components/common/SearchModal';
@@ -10,8 +11,9 @@ import { DocumentDetail } from './components/employee/DocumentDetail';
 import { EmployeeProfile } from './components/employee/EmployeeProfile';
 import { EmployeeActivity } from './components/employee/EmployeeActivity';
 import { AdminPage } from './components/admin/AdminPage';
-import { INITIAL_DOCUMENTS, INITIAL_EMPLOYEES } from './data/mockData';
+import { INITIAL_EMPLOYEES } from './data/mockData';
 import { EmployeeView, DocumentItem, EmployeeItem } from './types';
+
 
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,10 +22,49 @@ export function App() {
     INITIAL_EMPLOYEES.find((e) => e.empId === 'EMP1005') || INITIAL_EMPLOYEES[0]
   );
   const [activeEmployeeView, setActiveEmployeeView] = useState<EmployeeView>('dashboard');
-  const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string>('doc-1');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const response = await api.get('/api/documents');
+
+        const backendDocuments = response.data;
+
+        const mappedDocuments: DocumentItem[] = backendDocuments.map((doc: any) => ({
+          id: String(doc.id),
+          name: doc.fileName,
+          type: doc.fileName.toLowerCase().endsWith('.pdf')
+            ? 'PDF'
+            : doc.fileName.toLowerCase().endsWith('.docx')
+            ? 'DOCX'
+            : doc.fileName.toLowerCase().endsWith('.doc')
+            ? 'DOC'
+            : doc.fileName.toLowerCase().endsWith('.xlsx')
+            ? 'XLSX'
+            : 'OTHER',
+          category: 'General',
+          department: 'Organization',
+          uploadedBy: 'Admin',
+          uploadDate: 'Recently',
+          status: doc.status === 'UPLOADED' ? 'Ready' : 'Processing',
+          accessScope: 'Authorized Employees',
+          fileSize: `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB`,
+        }));
+
+        setDocuments(mappedDocuments);
+      } catch (error) {
+        console.error('Failed to fetch documents:', error);
+      }
+    };
+
+    if (isAuthenticated && currentPortal === 'employee') {
+      fetchDocuments();
+    }
+  }, [isAuthenticated, currentPortal]);
 
   const selectedDocument = documents.find((d) => d.id === selectedDocId) || documents[0];
 

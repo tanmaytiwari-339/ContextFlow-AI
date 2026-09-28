@@ -15,7 +15,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.contextflow.entity.AccessType;
 import com.contextflow.entity.Document;
+import com.contextflow.entity.DocumentAccess;
 import com.contextflow.entity.DocumentStatus;
 import com.contextflow.entity.User;
 import com.contextflow.repository.DocumentRepository;
@@ -103,6 +105,13 @@ public class DocumentService {
         document.setUpdatedAt(LocalDateTime.now());
         document = documentRepository.save(document);
         documentChunkService.createChunks(document);
+
+        DocumentAccess access = new DocumentAccess();
+        access.setDocument(document);
+        access.setAccessType(AccessType.EMPLOYEE);
+        access.setEmployee(loggedInUser);
+        documentAccessService.createAccessRule(access);
+        
         return document;
     }
     public List<Document> getMyDocuments(){

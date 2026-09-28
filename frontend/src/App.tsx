@@ -138,8 +138,12 @@ export function App() {
           {activeEmployeeView === 'documents' && (
             <EmployeeDocuments
               documents={documents}
+              currentUser={currentUser}
               onOpenDocDetail={handleOpenDocDetail}
               onNavigateHome={() => setActiveEmployeeView('dashboard')}
+              onUploadDocument={(newDoc)=>{
+                setDocuments((prev)=>[newDoc, ...prev]);
+              }}
             />
           )}
 

@@ -50,6 +50,8 @@ export function App() {
           uploadedBy: 'Admin',
           uploadDate: 'Recently',
           status: doc.status === 'UPLOADED' ? 'Ready' : 'Processing',
+          summary: doc.summary,
+          hasSummary: doc.hasSummary,
           accessScope: 'Authorized Employees',
           fileSize: `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB`,
         }));
@@ -126,6 +128,7 @@ export function App() {
           {activeEmployeeView === 'dashboard' && (
             <EmployeeDashboard
               currentUser={currentUser}
+              documents={documents}
               onNavigateToDocs={() => setActiveEmployeeView('documents')}
               onNavigateToChat={() => setActiveEmployeeView('knowledge-chat')}
               onNavigateToDocDetail={handleOpenDocDetail}

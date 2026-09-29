@@ -24,6 +24,8 @@ export interface DocumentItem {
   summaryText?: string;
   keyTakeaways?: string[];
   docCategory?: string;
+  summary?: string;
+  hasSummary?: boolean;
 }
 
 export interface EmployeeItem {

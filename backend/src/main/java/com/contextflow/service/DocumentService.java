@@ -26,7 +26,7 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final PdfTextExtractor pdfTextExtractor;
-    private final GeminiService geminiService;
+    private final OllamaChatService ollamaChatService;
     private final DocumentAccessService documentAccessService;
     private final DocumentChunkService documentChunkService;
     private final ActivityService activityService;
@@ -34,13 +34,13 @@ public class DocumentService {
     public DocumentService(
         DocumentRepository documentRepository,
         PdfTextExtractor pdfTextExtractor,
-        GeminiService geminiService,
+        OllamaChatService ollamaChatService,
         DocumentAccessService documentAccessService,
         DocumentChunkService documentChunkService,
         ActivityService activityService) {
         this.documentRepository = documentRepository;
         this.pdfTextExtractor = pdfTextExtractor;
-        this.geminiService = geminiService;
+        this.ollamaChatService = ollamaChatService;
         this.documentAccessService = documentAccessService;
         this.documentChunkService = documentChunkService;
         this.activityService = activityService;
@@ -193,7 +193,7 @@ public class DocumentService {
                 Document:
                 """ + content;
         
-        String summary = geminiService.generateResponse(prompt);
+        String summary = ollamaChatService.generateResponse(prompt);
 
         document.setSummary(summary);
         document.setUpdatedAt(LocalDateTime.now());

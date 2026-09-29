@@ -48,8 +48,13 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [summary, setSummary] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(document.summary || null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSummary(document.summary || null);
+  }, [document]);
+
   useEffect(() => {
     return () => {
       if (pdfUrl) {

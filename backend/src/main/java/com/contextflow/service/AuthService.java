@@ -11,10 +11,17 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    public AuthService(UserRepository userRepository,JwtService jwtService, PasswordEncoder passwordEncoder){
+    private final ActivityService activityService;
+    public AuthService(
+            UserRepository userRepository,
+            JwtService jwtService,
+            PasswordEncoder passwordEncoder,
+            ActivityService activityService) {
+
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
+        this.activityService = activityService;
     }
     
     public String login(String employeeId,String password){
@@ -31,6 +38,13 @@ public class AuthService {
         if(!passwordEncoder.matches(password,user.getPassword())){
             return "Invalid password";
         }
+
+        activityService.logActivity(
+                user,
+                "LOGIN",
+                "Logged in successfully"
+        );
+
         return jwtService.generateToken(user);
         
     }

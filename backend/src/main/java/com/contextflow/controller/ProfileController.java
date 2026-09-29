@@ -1,14 +1,19 @@
 package com.contextflow.controller;
 
+import java.util.List;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.contextflow.dto.ActivityResponse;
 import com.contextflow.dto.ChangePasswordRequest;
 import com.contextflow.dto.ProfileResponse;
 import com.contextflow.dto.UpdateProfileRequest;
+import com.contextflow.entity.Activity;
+import com.contextflow.service.ActivityService;
 import com.contextflow.service.ProfileService;
 
 @RestController
@@ -17,9 +22,13 @@ public class ProfileController {
 
     private final ProfileService profileService;
 
-    public ProfileController(ProfileService profileService) {
-        this.profileService = profileService;
-    }
+    private final ActivityService activityService;
+
+public ProfileController(ProfileService profileService,
+                         ActivityService activityService) {
+    this.profileService = profileService;
+    this.activityService = activityService;
+}
     
     @GetMapping
     public ProfileResponse getProfile() {
@@ -41,5 +50,20 @@ public class ProfileController {
         profileService.changePassword(request);
 
         return "Password changed successfully";
+    }
+    @GetMapping("/activity")
+    public List<ActivityResponse> getMyActivities() {
+        return activityService.getMyActivities()
+                .stream()
+                .map(ActivityResponse::new)
+                .toList();
+    }
+
+    @GetMapping("/my-activity")
+    public List<ActivityResponse> getMyProductActivities() {
+        return activityService.getMyProductActivities()
+                .stream()
+                .map(ActivityResponse::new)
+                .toList();
     }
 }

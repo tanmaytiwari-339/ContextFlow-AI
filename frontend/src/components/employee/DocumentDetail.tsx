@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import {
   FileText,
   RotateCw,
@@ -9,16 +10,13 @@ import {
   Download,
   Share2,
   Bookmark,
-  ExternalLink,
   ChevronLeft,
-  Calendar,
-  Layers,
   Sparkles,
   Check,
-  Lock,
   Hash
 } from 'lucide-react';
 import { DocumentItem } from '../../types';
+import api from '../../api/axios';
 
 type MotionProps<T> = React.HTMLAttributes<T> & {
   initial?: unknown;
@@ -50,18 +48,85 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(document.summary || null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSummary(document.summary || null);
+  }, [document]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        window.URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   };
+  const fetchSummary = async () => {
+    try {
+      setIsRegenerating(true);
 
-  const handleRegenerate = () => {
-    setIsRegenerating(true);
-    setTimeout(() => {
+      const response = await api.post(`/api/documents/${document.id}/summary`);
+
+      setSummary(response.data.summary);
+      showToast('AI summary generated successfully.');
+    } catch (error) {
+      console.error('Failed to generate summary:', error);
+      showToast('Failed to generate document summary.');
+    } finally {
       setIsRegenerating(false);
-      showToast('AI summary regenerated with newest semantic embeddings.');
-    }, 850);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const response = await api.get(`/api/documents/${document.id}/download`, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(response.data);
+      const link =  window.document.createElement('a');
+
+      link.href = url;
+      link.download = document.name;
+
+      window.document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      showToast('Document downloaded successfully.');
+    } catch (error) {
+      console.error('Failed to download document:', error);
+      showToast('Failed to download document.');
+    }
+  };
+
+  const handleViewDocument = async () => {
+    try {
+      const response = await api.get(`/api/documents/${document.id}/download`, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(response.data);
+      setPdfUrl(url);
+    } catch (error) {
+      console.error('Failed to load document:', error);
+      showToast('Failed to open document.');
+    }
+};
+
+
+
+  const handleRegenerate = async () => {
+    await fetchSummary();
+    
   };
 
   const promptQuestions = [
@@ -162,7 +227,10 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('view')}
+          onClick={() =>{ 
+            setActiveTab('view');
+            handleViewDocument();
+          }}
           className={`pb-3 relative transition-colors cursor-pointer shrink-0 ${
             activeTab === 'view' ? 'text-blue-600' : 'hover:text-slate-800'
           }`}
@@ -239,9 +307,43 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
                     </button>
                   </div>
 
-                  <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                    {document.summaryText || "This document outlines the company's leave policy, including types of leave, eligibility criteria, application process, approval workflow, and important guidelines. It covers annual leave, sick leave, maternity and paternity leave, and special leave. Employees must apply for leave through the HR portal and get manager approval."}
-                  </p>
+                  <div className="text-xs text-slate-600 leading-relaxed font-normal">
+                    {summary ? (
+                      <ReactMarkdown
+                        components={{
+                          h3: ({ children }) => (
+                            <h3 className="text-sm font-bold text-slate-900 mt-5 mb-2">
+                              {children}
+                            </h3>
+                          ),
+                          p: ({ children }) => (
+                            <p className="mb-3">
+                              {children}
+                            </p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc pl-5 space-y-1.5 mb-3">
+                              {children}
+                            </ul>
+                          ),
+                          li: ({ children }) => (
+                            <li className="text-slate-700">
+                              {children}
+                            </li>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-slate-900">
+                              {children}
+                            </strong>
+                          ),
+                        }}
+                      >
+                        {summary}
+                      </ReactMarkdown>
+                    ) : (
+                      <p>No summary generated yet.</p>
+                    )}
+                  </div>
 
                   {/* Key Takeaways Box */}
                   <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/60 space-y-3">
@@ -327,27 +429,26 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
                   </span>
                   <span className="text-[11px] text-slate-400 font-mono">100% Zoom · High-DPI</span>
                 </div>
-                <div className="bg-slate-50 rounded-xl p-8 min-h-[420px] flex flex-col items-center justify-center border border-dashed border-slate-200 text-center">
-                  <FileText className="w-12 h-12 text-blue-500 mb-3" />
-                  <h4 className="text-sm font-bold text-slate-800">Enterprise Document Viewer</h4>
-                  <p className="text-xs text-slate-500 max-w-sm mt-1">
-                    Grounded PDF render engine with live semantic highlighter, citation markers, and export support.
-                  </p>
-                  <div className="flex items-center gap-2 mt-4">
-                    <button
-                      onClick={() => showToast('Full screen reader triggered.')}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                    >
-                      Expand Full Viewport
-                    </button>
-                    <button
-                      onClick={() => showToast(`Downloading ${document.name}...`)}
-                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download Document</span>
-                    </button>
-                  </div>
+                <div className="bg-slate-50 rounded-xl min-h-[420px] border border-slate-200 overflow-hidden">
+                  {pdfUrl ? (
+                    <iframe
+                      src={pdfUrl}
+                      title={document.name}
+                      className="w-full h-[700px]"
+                    />
+                  ) : (
+                    <div className="min-h-[420px] flex flex-col items-center justify-center text-center">
+                      <FileText className="w-12 h-12 text-blue-500 mb-3" />
+
+                      <h4 className="text-sm font-bold text-slate-800">
+                        Loading Document...
+                      </h4>
+
+                      <p className="text-xs text-slate-500 max-w-sm mt-1">
+                        Opening {document.name}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -510,7 +611,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
             <h3 className="text-xs font-bold text-slate-900 mb-1">Actions</h3>
 
             <button
-              onClick={() => showToast(`Downloading ${document.name}...`)}
+              onClick={handleDownload}
               className="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-slate-500" />

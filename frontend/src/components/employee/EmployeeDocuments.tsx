@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Search,
   Plus,
@@ -17,38 +17,164 @@ import {
   Box,
   ExternalLink,
   MessageSquare,
-  Check
+  Check,
+  UploadCloud,
+  Upload,
+  Trash2,
+  AlertCircle,
+  FileUp,
+  Paperclip
 } from 'lucide-react';
-import { DocumentItem } from '../../types';
 import { AnimatePresence, motion } from 'framer-motion';
+import { DocumentItem, EmployeeItem, DocType } from '../../types';
+
 
 interface EmployeeDocumentsProps {
   documents: DocumentItem[];
+  currentUser?: EmployeeItem;
   onOpenDocDetail: (docId: string) => void;
   onNavigateHome: () => void;
+  onUploadDocument?: (newDoc: DocumentItem) => void;
+
 }
 
 export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
   documents,
+  currentUser,
   onOpenDocDetail,
   onNavigateHome,
+  onUploadDocument,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedDept, setSelectedDept] = useState('All');
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'table' | 'grid' | 'vault'>('table');
-  const [isUploadRequestOpen, setIsUploadRequestOpen] = useState(false);
-  const [requestDocName, setRequestDocName] = useState('');
-  const [requestDept, setRequestDept] = useState('HR');
-  const [requestReason, setRequestReason] = useState('');
-  const [requestSubmitted, setRequestSubmitted] = useState(false);
+
+   const [isUploadSectionOpen, setIsUploadSectionOpen] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadFileName, setUploadFileName] = useState('');
+  const [uploadDocType, setUploadDocType] = useState<DocType>('PDF');
+  const [uploadDept, setUploadDept] = useState(currentUser?.department || 'Engineering');
+  const [uploadCategory, setUploadCategory] = useState('Policy');
+  const [uploadAccessScope, setUploadAccessScope] = useState('Organization Wide');
+  const [uploadDescription, setUploadDescription] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [quickInspectDoc, setQuickInspectDoc] = useState<DocumentItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
+  };
+  const handleFileSelect = (file: File) => {
+    setUploadedFile(file);
+    const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+    const capitalized = cleanName
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    setUploadFileName(capitalized);
+
+    const ext = file.name.split('.').pop()?.toUpperCase() || '';
+    if (ext === 'PDF') setUploadDocType('PDF');
+    else if (['DOC', 'DOCX'].includes(ext)) setUploadDocType('DOCX');
+    else if (['XLS', 'XLSX', 'CSV'].includes(ext)) setUploadDocType('XLSX');
+    else if (['PPT', 'PPTX'].includes(ext)) setUploadDocType('PPTX');
+    else setUploadDocType('OTHER');
+  };
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUploadSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFileName.trim()) return;
+
+    setIsUploading(true);
+    setUploadProgress(25);
+
+    const progressTimer = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 85) {
+          clearInterval(progressTimer);
+          return 90;
+        }
+        return prev + 25;
+      });
+    }, 150);
+
+    setTimeout(() => {
+      clearInterval(progressTimer);
+      setUploadProgress(100);
+
+      const newDocId = `doc-${Date.now()}`;
+      const formattedDate = new Date().toISOString().split('T')[0];
+      const sizeInMB = uploadedFile
+        ? (uploadedFile.size / (1024 * 1024)).toFixed(1) + ' MB'
+        : '2.1 MB';
+
+      const newDoc: DocumentItem = {
+        id: newDocId,
+        name: uploadFileName.trim(),
+        type: uploadDocType,
+        category: uploadCategory,
+        department: uploadDept,
+        uploadedBy: currentUser?.name || 'Self Upload',
+        uploadDate: formattedDate,
+        status: 'Ready',
+        accessScope: uploadAccessScope,
+        description:
+          uploadDescription.trim() ||
+          `Employee uploaded document for ${uploadDept} team requirements. Verified and ready for team collaboration.`,
+        pages: Math.floor(Math.random() * 8) + 2,
+        fileSize: sizeInMB,
+        summaryText: `This authorized document was directly uploaded by ${currentUser?.name || 'an employee'} for ${uploadDept} department needs. All clauses have been verified and processed by the semantic index engine.`,
+        keyTakeaways: [
+          `Directly uploaded and verified for ${uploadDept} operations`,
+          `Access scope set to ${uploadAccessScope} for compliant internal usage`,
+          `Semantic indexing complete - searchable across global search and Knowledge Chat`
+        ],
+        docCategory: uploadCategory
+      };
+
+      if (onUploadDocument) {
+        onUploadDocument(newDoc);
+      }
+      setTimeout(() => {
+        setIsUploading(false);
+        setIsUploadSectionOpen(false);
+        setUploadedFile(null);
+        setUploadFileName('');
+        setUploadDescription('');
+        setUploadProgress(0);
+        showToast(`Document "${newDoc.name}" uploaded successfully!`);
+      }, 350);
+    }, 850);
   };
 
   // Filter docs
@@ -224,14 +350,290 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
           </button>
 
           <button
-            onClick={() => setIsUploadRequestOpen(true)}
+            onClick={() => setIsUploadSectionOpen(!isUploadSectionOpen)}
             className="text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Upload Request</span>
+             <UploadCloud className="w-3.5 h-3.5" />
+            <span>{isUploadSectionOpen ? 'Close Upload' : 'Upload Document'}</span>
           </button>
         </div>
       </div>
+
+            {/* Upload Document Section (Direct Employee Upload) */}
+      <AnimatePresence>
+        {isUploadSectionOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-white rounded-2xl p-5 md:p-6 border-2 border-blue-200/90 shadow-md space-y-5">
+              <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                    <UploadCloud className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      Upload Document to Workspace
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                        Employee Self-Service
+                      </span>
+                    </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                      Upload files, guides, spreadsheets, or department policies to instantly index them into your team's knowledge vault.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsUploadSectionOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleUploadSubmit} className="space-y-4">
+                {/* Drag & Drop File Zone */}
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleFileSelect(e.target.files[0]);
+                      }
+                    }}
+                    accept=".pdf,.doc,.docx,.xlsx,.xls,.ppt,.pptx,.txt,.csv"
+                    className="hidden"
+                  />
+
+                  {!uploadedFile ? (
+                    <div
+                      onDragEnter={handleDrag}
+                      onDragOver={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
+                        dragActive
+                          ? 'border-blue-500 bg-blue-50/80 scale-[1.005]'
+                          : 'border-slate-300 hover:border-blue-400 bg-slate-50/60 hover:bg-blue-50/20'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-2xs mx-auto flex items-center justify-center text-blue-600 mb-2">
+                        <UploadCloud className="w-6 h-6 animate-pulse" />
+                      </div>
+                       <p className="text-xs font-bold text-slate-800">
+                        Drag and drop your file here, or{' '}
+                        <span className="text-blue-600 underline font-extrabold">browse files</span>
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Supports PDF, Word (DOCX/DOC), Excel (XLSX), PowerPoint (PPTX), and TXT up to 50MB
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 bg-blue-50/50 rounded-2xl border border-blue-200 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                          {uploadDocType}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{uploadedFile.name}</p>
+                          <p className="text-[11px] text-slate-500">
+                            {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB · File ready for semantic indexing
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                         type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-xs font-semibold text-blue-600 hover:underline px-2 py-1 cursor-pointer"
+                        >
+                          Change
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveFile}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Remove file"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                 {/* Metadata Fields Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Document Title / Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={uploadFileName}
+                      onChange={(e) => setUploadFileName(e.target.value)}
+                      placeholder="e.g. Q3 Engineering Architecture Guidelines"
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Format / Type
+                    </label>
+                    <select
+                      value={uploadDocType}
+                      onChange={(e) => setUploadDocType(e.target.value as DocType)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium cursor-pointer"
+                    >
+                      <option value="PDF">PDF Document</option>
+                      <option value="DOCX">Word Document (.docx)</option>
+                      <option value="XLSX">Excel Spreadsheet (.xlsx)</option>
+                      <option value="PPTX">Presentation (.pptx)</option>
+                      <option value="OTHER">Other Format</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Department *
+                    </label>
+                    <select
+                      value={uploadDept}
+                      onChange={(e) => setUploadDept(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium cursor-pointer"
+                    >
+                      <option value="Engineering">Engineering</option>
+                      <option value="HR">HR</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Product">Product</option>
+                       <option value="Admin">Admin</option>
+                      <option value="IT">IT</option>
+                      <option value="Operations">Operations</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Category *
+                    </label>
+                    <select
+                      value={uploadCategory}
+                      onChange={(e) => setUploadCategory(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium cursor-pointer"
+                    >
+                      <option value="Policy">Policy</option>
+                      <option value="Handbook">Handbook</option>
+                      <option value="Technical">Technical</option>
+                      <option value="Financial">Financial</option>
+                      <option value="Security">Security</option>
+                      <option value="Guide">Guide</option>
+                      <option value="Report">Report</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Access Scope *
+                    </label>
+                    <select
+                      value={uploadAccessScope}
+                      onChange={(e) => setUploadAccessScope(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium cursor-pointer"
+                    >
+                      <option value="Organization Wide">Organization Wide (All Staff)</option>
+                      <option value="Department Only">Department Only ({uploadDept})</option>
+                      <option value="Personal Only">Personal Only (Private to you)</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Uploaded By
+                    </label>
+                    <div className="px-3 py-2 bg-slate-100/80 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold flex items-center justify-between">
+                      <span>{currentUser?.name || 'Current Employee'}</span>
+                      <span className="text-[10px] text-slate-500 font-normal">
+                        {currentUser?.position || 'Verified Staff'} · {currentUser?.empId || 'EMP1005'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Document Description & Summary Notes
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={uploadDescription}
+                    onChange={(e) => setUploadDescription(e.target.value)}
+                    placeholder="Briefly describe what this document covers to assist coworkers and AI search indexing..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium"
+                  />
+                </div>
+
+                {/* Progress Bar when uploading */}
+                {isUploading && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2 animate-fadeIn">
+                    <div className="flex items-center justify-between text-xs font-semibold text-blue-900">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+                        Parsing content & generating vector embeddings...
+                      </span>
+                      <span className="font-mono">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-blue-200/70 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-blue-600 h-full rounded-full transition-all duration-200"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit / Cancel Buttons */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Instant AI indexing enabled across Knowledge Chat</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isUploading}
+                      onClick={() => setIsUploadSectionOpen(false)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isUploading || !uploadFileName.trim()}
+                      className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isUploading ? 'Uploading & Indexing...' : 'Upload & Index Document'}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+                    
 
       {/* 5 Stat Cards with animated hover */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
@@ -685,117 +1087,6 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Upload Request Modal */}
-      <AnimatePresence>
-        {isUploadRequestOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 space-y-4"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h3 className="text-base font-bold text-slate-900">
-                  Request Document Upload
-                </h3>
-                <button
-                  onClick={() => {
-                    setIsUploadRequestOpen(false);
-                    setRequestSubmitted(false);
-                  }}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {requestSubmitted ? (
-                <div className="py-6 text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
-                    <Sparkles className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900">Request Sent Successfully!</h4>
-                  <p className="text-xs text-slate-500">
-                    Your administrator will review the document request for {requestDocName}.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setIsUploadRequestOpen(false);
-                      setRequestSubmitted(false);
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold"
-                  >
-                    Done
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Document Name / Subject *
-                    </label>
-                    <input
-                      type="text"
-                      value={requestDocName}
-                      onChange={(e) => setRequestDocName(e.target.value)}
-                      placeholder="e.g. Travel Expense Policy 2025"
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Department
-                    </label>
-                    <select
-                      value={requestDept}
-                      onChange={(e) => setRequestDept(e.target.value)}
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500"
-                    >
-                      <option value="HR">HR</option>
-                      <option value="Finance">Finance</option>
-                      <option value="Engineering">Engineering</option>
-                      <option value="IT">IT</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Reason for Request
-                    </label>
-                    <textarea
-                      value={requestReason}
-                      onChange={(e) => setRequestReason(e.target.value)}
-                      placeholder="Describe why you need access to this document..."
-                      rows={3}
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-2">
-                    <button
-                      onClick={() => setIsUploadRequestOpen(false)}
-                      className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (requestDocName.trim()) setRequestSubmitted(true);
-                      }}
-                      className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl"
-                    >
-                      Submit Request
-                    </button>
-                  </div>
-                </div>
-              )}
             </motion.div>
           </div>
         )}

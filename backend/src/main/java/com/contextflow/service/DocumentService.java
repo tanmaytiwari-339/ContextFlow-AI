@@ -15,7 +15,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.contextflow.entity.AccessType;
 import com.contextflow.entity.Document;
+import com.contextflow.entity.DocumentAccess;
 import com.contextflow.entity.DocumentStatus;
 import com.contextflow.entity.User;
 import com.contextflow.repository.DocumentRepository;
@@ -24,16 +26,24 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final PdfTextExtractor pdfTextExtractor;
-    private final GeminiService geminiService;
+    private final OllamaChatService ollamaChatService;
     private final DocumentAccessService documentAccessService;
     private final DocumentChunkService documentChunkService;
+    private final ActivityService activityService;
 
-    public DocumentService(DocumentRepository documentRepository,PdfTextExtractor pdfTextExtractor,GeminiService geminiService,DocumentAccessService documentAccessService, DocumentChunkService documentChunkService){
+    public DocumentService(
+        DocumentRepository documentRepository,
+        PdfTextExtractor pdfTextExtractor,
+        OllamaChatService ollamaChatService,
+        DocumentAccessService documentAccessService,
+        DocumentChunkService documentChunkService,
+        ActivityService activityService) {
         this.documentRepository = documentRepository;
         this.pdfTextExtractor = pdfTextExtractor;
-        this.geminiService = geminiService;
+        this.ollamaChatService = ollamaChatService;
         this.documentAccessService = documentAccessService;
         this.documentChunkService = documentChunkService;
+        this.activityService = activityService;
     }
 
     public User getLoggedInUser(){
@@ -103,6 +113,17 @@ public class DocumentService {
         document.setUpdatedAt(LocalDateTime.now());
         document = documentRepository.save(document);
         documentChunkService.createChunks(document);
+
+        DocumentAccess access = new DocumentAccess();
+        access.setDocument(document);
+        access.setAccessType(AccessType.EMPLOYEE);
+        access.setEmployee(loggedInUser);
+        documentAccessService.createAccessRule(access);
+        activityService.logActivity(
+                loggedInUser,
+                "DOCUMENT_UPLOADED",
+                "Uploaded document: " + document.getFileName()
+        );
         return document;
     }
     public List<Document> getMyDocuments(){
@@ -172,7 +193,7 @@ public class DocumentService {
                 Document:
                 """ + content;
         
-        String summary = geminiService.generateResponse(prompt);
+        String summary = ollamaChatService.generateResponse(prompt);
 
         document.setSummary(summary);
         document.setUpdatedAt(LocalDateTime.now());

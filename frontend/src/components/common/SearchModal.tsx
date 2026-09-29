@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, FileText, User, ArrowRight, Sparkles } from 'lucide-react';
-import { INITIAL_DOCUMENTS, INITIAL_EMPLOYEES } from '../../data/mockData';
+import { INITIAL_EMPLOYEES } from '../../data/mockData';
 import { DocumentItem, EmployeeItem } from '../../types';
 
 interface SearchModalProps {
@@ -8,6 +8,7 @@ interface SearchModalProps {
   onClose: () => void;
   onSelectDoc: (doc: DocumentItem) => void;
   onSelectEmployee: (emp: EmployeeItem) => void;
+  documents: DocumentItem[];
 }
 
 export const SearchModal: React.FC<SearchModalProps> = ({
@@ -15,6 +16,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   onClose,
   onSelectDoc,
   onSelectEmployee,
+  documents,
 }) => {
   const [query, setQuery] = useState('');
 
@@ -34,7 +36,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
   if (!isOpen) return null;
 
-  const filteredDocs = INITIAL_DOCUMENTS.filter(
+  const filteredDocs = documents.filter(
     (d) =>
       d.name.toLowerCase().includes(query.toLowerCase()) ||
       d.category.toLowerCase().includes(query.toLowerCase()) ||

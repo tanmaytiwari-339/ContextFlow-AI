@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../api/axios';
 import {
   Camera,
   Mail,
@@ -19,31 +20,101 @@ interface EmployeeProfileProps {
 }
 
 export const EmployeeProfile: React.FC<EmployeeProfileProps> = ({ currentUser }) => {
-  const [fullName, setFullName] = useState(currentUser?.name || 'Tanmay Tiwari');
-  const [email, setEmail] = useState(currentUser?.email || 'tanmay.tiwari@company.com');
-  const [phone, setPhone] = useState(currentUser?.phone || '+91 98765 43210');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  useEffect(() => {
-    if (currentUser) {
-      setFullName(currentUser.name);
-      setEmail(currentUser.email);
-      setPhone(currentUser.phone);
-    }
-  }, [currentUser]);
+  const [employeeId, setEmployeeId] = useState('');
+  const [department, setDepartment] = useState('');
+  const [position, setPosition] = useState('');
+  const [role, setRole] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activities, setActivities] = useState<any[]>([]);
 
-  const handleSave = () => {
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2500);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/api/profile');
+
+        const profile = response.data;
+
+        setFullName(profile.name || '');
+        setEmail(profile.email || '');
+        setPhone(profile.phone || '');
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+
+    const fetchActivities = async () => {
+    try {
+      const response = await api.get('/api/profile/activity');
+      setActivities(response.data);
+    } catch (error) {
+      console.error('Failed to load activities:', error);
+    }
   };
 
-  const activityList = [
-    { text: 'Logged in from Windows (Chrome)', time: 'Today, 10:24 AM', dotColor: 'bg-emerald-500' },
-    { text: 'Viewed Company Leave Policy.pdf', time: 'Today, 09:15 AM', dotColor: 'bg-emerald-500' },
-    { text: 'Asked a question in Knowledge Chat', time: 'Yesterday, 04:32 PM', dotColor: 'bg-blue-500' },
-    { text: 'Downloaded Engineering Guidelines.docx', time: 'Sep 10, 2025', dotColor: 'bg-blue-500' },
-    { text: 'Updated profile picture', time: 'Sep 08, 2025', dotColor: 'bg-emerald-500' },
-  ];
+  fetchActivities();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await api.put('/api/profile', {
+        name: fullName
+      });
+
+      setSavedSuccess(true);
+
+      setTimeout(() => {
+        setSavedSuccess(false);
+      }, 2500);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      alert('Failed to update profile.');
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('Please fill all password fields.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert('New password and confirm password do not match.');
+      return;
+    }
+
+    try {
+      await api.put('/api/profile/password', {
+        currentPassword: currentPassword,
+        newPassword: newPassword
+      });
+
+      alert('Password changed successfully.');
+
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordForm(false);
+
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      alert('Current password is incorrect or password change failed.');
+    }
+  };
+
+  
 
   return (
     <div className="space-y-6">
@@ -266,22 +337,68 @@ export const EmployeeProfile: React.FC<EmployeeProfileProps> = ({ currentUser })
           </div>
 
           <div className="space-y-3">
-            <div
-              onClick={() => alert('Change password workflow initiated.')}
-              className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/30 transition-all flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Key className="w-4 h-4" />
+            <div className="p-3.5 rounded-xl border border-slate-200">
+              <div
+                onClick={() => setShowPasswordForm(!showPasswordForm)}
+                className="flex items-center justify-between cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <Key className="w-4 h-4" />
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">
+                      Change Password
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      Update your password regularly to keep your account secure.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Change Password</h4>
-                  <p className="text-[11px] text-slate-400">
-                    Update your password regularly to keep your account secure.
-                  </p>
-                </div>
+
+                <ChevronRight
+                  className={`w-4 h-4 text-slate-400 transition-transform ${
+                    showPasswordForm ? 'rotate-90' : ''
+                  }`}
+                />
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
+
+              {showPasswordForm && (
+                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+
+                  <input
+                    type="password"
+                    placeholder="Current Password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500"
+                  />
+
+                  <input
+                    type="password"
+                    placeholder="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500"
+                  />
+
+                  <input
+                    type="password"
+                    placeholder="Confirm New Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500"
+                  />
+
+                  <button
+                    onClick={handleChangePassword}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors"
+                  >
+                    Change Password
+                  </button>
+                </div>
+              )}
             </div>
 
             <div
@@ -322,14 +439,20 @@ export const EmployeeProfile: React.FC<EmployeeProfileProps> = ({ currentUser })
           </div>
 
           <div className="space-y-3">
-            {activityList.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-slate-50 last:border-0">
+            {activities.map((activity) => (
+              <div
+                key={activity.id}
+                className="flex items-center justify-between text-xs py-1 border-b border-slate-50 last:border-0"
+              >
                 <div className="flex items-center gap-2.5">
-                  <span className={`w-2 h-2 rounded-full ${item.dotColor} shrink-0`} />
-                  <span className="text-slate-700 font-medium">{item.text}</span>
+                  <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                  <span className="text-slate-700 font-medium">
+                    {activity.description}
+                  </span>
                 </div>
+
                 <span className="text-slate-400 text-[11px] shrink-0 font-medium">
-                  {item.time}
+                  {new Date(activity.createdAt).toLocaleString()}
                 </span>
               </div>
             ))}

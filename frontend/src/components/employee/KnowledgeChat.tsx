@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../api/axios';
 import {
   MessageSquare,
   Plus,
@@ -28,9 +29,11 @@ export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail })
   const [inputText, setInputText] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [liked, setLiked] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const query = textToSend || inputText;
+
     if (!query.trim()) return;
 
     const userMsg: ChatMessage = {
@@ -39,68 +42,39 @@ export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail })
       text: query,
       timestamp: 'Just now'
     };
-
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
+    
+    try {
+      setIsLoading(true);
+      const response = await api.get('/api/chat',{
+        params: {
+          question: query
+        }
+      });
 
-    // Generate responsive AI response
-    setTimeout(() => {
-      let reply: ChatMessage;
-      const lower = query.toLowerCase();
-
-      if (lower.includes('leave') || lower.includes('holiday')) {
-        reply = {
-          id: `msg-${Date.now() + 1}`,
-          sender: 'assistant',
-          text: "Based on the Company Leave Policy.pdf, employees receive 20 days of paid annual leave each calendar year. Requests must be logged 7 days in advance via the internal HR portal.",
-          timestamp: 'Just now',
-          keyPoints: [
-            '20 days annual leave entitlement per year',
-            'Requires line manager approval through the HR portal',
-            'Up to 10 days of unused leave can be carried forward into the next year',
-            'Sick leaves exceeding 3 days require a medical certificate'
-          ],
-          sources: [
-            { id: 's-1', title: 'Company Leave Policy.pdf', docType: 'PDF', page: 'Page 3 – Annual Leave Rules' },
-            { id: 's-2', title: 'Employee Handbook.docx', docType: 'DOC', page: 'Page 18 – Attendance & Time Off' }
-          ]
-        };
-      } else if (lower.includes('maternity') || lower.includes('paternity')) {
-        reply = {
-          id: `msg-${Date.now() + 1}`,
-          sender: 'assistant',
-          text: "According to the Maternity Leave Policy.pdf, eligible female employees are entitled to 26 weeks of paid maternity leave, while male employees receive 2 weeks of paid paternity leave.",
-          timestamp: 'Just now',
-          keyPoints: [
-            '26 weeks fully paid maternity leave',
-            '2 weeks paid paternity leave',
-            'Flexible return-to-work arrangements available upon request',
-            'Health insurance coverage continues during the entire leave period'
-          ],
-          sources: [
-            { id: 's-1', title: 'Maternity Leave Policy.pdf', docType: 'PDF', page: 'Page 2 – Parental Entitlements' }
-          ]
-        };
-      } else {
-        reply = {
-          id: `msg-${Date.now() + 1}`,
-          sender: 'assistant',
-          text: `Here is the relevant information extracted from your authorized organizational documents regarding "${query}":`,
-          timestamp: 'Just now',
-          keyPoints: [
-            'All enterprise guidelines are strictly enforced under company compliance frameworks',
-            'For operational exceptions, contact your department lead or HR partner',
-            'Documentation is verified and updated quarterly'
-          ],
-          sources: [
-            { id: 's-1', title: 'Engineering Guidelines.docx', docType: 'DOC', page: 'Page 7 – Operational Protocols' },
-            { id: 's-2', title: 'Remote Work Policy.pdf', docType: 'PDF', page: 'Page 4 – Governance' }
-          ]
-        };
-      }
+      const reply: ChatMessage = {
+        id: `msg-${Date.now() + 1}`,
+        sender: 'assistant',
+        text: response.data,
+        timestamp: 'Just now'
+      };
 
       setMessages((prev) => [...prev, reply]);
-    }, 600);
+    }catch(error){
+      console.error('Failed to get chat response:', error);
+
+      const errorMessage: ChatMessage = {
+        id: `msg-${Date.now() + 1}`,
+        sender: 'assistant',
+        text: 'Sorry, I could not process your question. Please try again.',
+        timestamp: 'Just now'
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+    }finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCopy = (text: string) => {
@@ -203,131 +177,146 @@ export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail })
                 <p className="text-[11px]">Answers cite exact sections and policy manuals</p>
               </div>
             ) : (
-              messages.map((m) => {
-                if (m.sender === 'user') {
-                  return (
-                    <div key={m.id} className="flex justify-end items-start gap-2">
-                      <div className="flex flex-col items-end max-w-md">
-                        <div className="bg-blue-50 border border-blue-100 text-blue-900 rounded-2xl rounded-tr-xs px-4 py-2.5 text-xs font-medium shadow-2xs">
-                          {m.text}
+              <>
+                {messages.map((m) => {
+                  if (m.sender === 'user') {
+                    return (
+                      <div key={m.id} className="flex justify-end items-start gap-2">
+                        <div className="flex flex-col items-end max-w-md">
+                          <div className="bg-blue-50 border border-blue-100 text-blue-900 rounded-2xl rounded-tr-xs px-4 py-2.5 text-xs font-medium shadow-2xs">
+                            {m.text}
+                          </div>
+                          <span className="text-[10px] text-slate-400 mt-1">{m.timestamp}</span>
                         </div>
-                        <span className="text-[10px] text-slate-400 mt-1">{m.timestamp}</span>
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                          TG
+                        </div>
                       </div>
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                        TG
+                    );
+                  }
+
+                  return (
+                    <div key={m.id} className="flex items-start gap-2.5">
+                      <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <MessageSquare className="w-3.5 h-3.5" />
+                      </div>
+
+                      <div className="flex-1 space-y-3">
+                        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl rounded-tl-xs p-4 space-y-3 text-xs text-slate-800 shadow-2xs">
+                          <p className="leading-relaxed">{m.text}</p>
+
+                          {m.keyPoints && m.keyPoints.length > 0 && (
+                            <div className="pt-1">
+                              <p className="font-bold text-slate-900 text-xs mb-1.5">
+                                Key Points:
+                              </p>
+                              <ul className="space-y-1 text-slate-700">
+                                {m.keyPoints.map((pt, idx) => (
+                                  <li key={idx} className="flex items-start gap-2">
+                                    <span className="text-blue-600 font-bold">•</span>
+                                    <span>{pt}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Reaction and copy controls */}
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-slate-400">
+                            <span className="text-[10px]">{m.timestamp}</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleCopy(m.text)}
+                                className="p-1 hover:text-slate-600 rounded transition-colors"
+                                title="Copy text"
+                              >
+                                {isCopied ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => setLiked(liked === true ? null : true)}
+                                className={`p-1 hover:text-slate-600 rounded transition-colors ${
+                                  liked === true ? 'text-blue-600' : ''
+                                }`}
+                                title="Good answer"
+                              >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setLiked(liked === false ? null : false)}
+                                className={`p-1 hover:text-slate-600 rounded transition-colors ${
+                                  liked === false ? 'text-red-500' : ''
+                                }`}
+                                title="Poor answer"
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sources Accordion Card */}
+                        {m.sources && m.sources.length > 0 && (
+                          <div className="bg-white rounded-xl border border-slate-200 p-3 space-y-2">
+                            <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5 text-blue-600" />
+                              Sources ({m.sources.length})
+                            </span>
+
+                            <div className="space-y-1.5">
+                              {m.sources.map((s) => (
+                                <div
+                                  key={s.id}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <div
+                                      className={`w-6 h-6 rounded flex items-center justify-center text-[8px] font-bold text-white ${
+                                        s.docType === 'PDF' ? 'bg-red-500' : 'bg-blue-600'
+                                      }`}
+                                    >
+                                      {s.docType}
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-slate-800">
+                                        {s.title}
+                                      </p>
+                                      <p className="text-[10px] text-slate-400">{s.page}</p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => onOpenDocDetail('doc-1')}
+                                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50"
+                                  >
+                                    <span>Open</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
-                }
-
-                return (
-                  <div key={m.id} className="flex items-start gap-2.5">
+                })}
+                {isLoading && (
+                  <div className="flex items-start gap-2.5">
                     <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
                       <MessageSquare className="w-3.5 h-3.5" />
                     </div>
 
-                    <div className="flex-1 space-y-3">
-                      <div className="bg-slate-50 border border-slate-200/90 rounded-2xl rounded-tl-xs p-4 space-y-3 text-xs text-slate-800 shadow-2xs">
-                        <p className="leading-relaxed">{m.text}</p>
-
-                        {m.keyPoints && m.keyPoints.length > 0 && (
-                          <div className="pt-1">
-                            <p className="font-bold text-slate-900 text-xs mb-1.5">
-                              Key Points:
-                            </p>
-                            <ul className="space-y-1 text-slate-700">
-                              {m.keyPoints.map((pt, idx) => (
-                                <li key={idx} className="flex items-start gap-2">
-                                  <span className="text-blue-600 font-bold">•</span>
-                                  <span>{pt}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Reaction and copy controls */}
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-slate-400">
-                          <span className="text-[10px]">{m.timestamp}</span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleCopy(m.text)}
-                              className="p-1 hover:text-slate-600 rounded transition-colors"
-                              title="Copy text"
-                            >
-                              {isCopied ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => setLiked(liked === true ? null : true)}
-                              className={`p-1 hover:text-slate-600 rounded transition-colors ${
-                                liked === true ? 'text-blue-600' : ''
-                              }`}
-                              title="Good answer"
-                            >
-                              <ThumbsUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setLiked(liked === false ? null : false)}
-                              className={`p-1 hover:text-slate-600 rounded transition-colors ${
-                                liked === false ? 'text-red-500' : ''
-                              }`}
-                              title="Poor answer"
-                            >
-                              <ThumbsDown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Sources Accordion Card */}
-                      {m.sources && m.sources.length > 0 && (
-                        <div className="bg-white rounded-xl border border-slate-200 p-3 space-y-2">
-                          <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5 text-blue-600" />
-                            Sources ({m.sources.length})
-                          </span>
-
-                          <div className="space-y-1.5">
-                            {m.sources.map((s) => (
-                              <div
-                                key={s.id}
-                                className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-blue-200 transition-colors"
-                              >
-                                <div className="flex items-center gap-2.5">
-                                  <div
-                                    className={`w-6 h-6 rounded flex items-center justify-center text-[8px] font-bold text-white ${
-                                      s.docType === 'PDF' ? 'bg-red-500' : 'bg-blue-600'
-                                    }`}
-                                  >
-                                    {s.docType}
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-semibold text-slate-800">
-                                      {s.title}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400">{s.page}</p>
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => onOpenDocDetail('doc-1')}
-                                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50"
-                                >
-                                  <span>Open</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl rounded-tl-xs px-4 py-3 text-xs text-slate-500">
+                      AI is thinking...
                     </div>
                   </div>
-                );
-              })
+                )}
+              </>
+              
+              
             )}
           </div>
 

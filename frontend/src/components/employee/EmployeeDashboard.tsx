@@ -14,6 +14,7 @@ import { DocumentItem, EmployeeItem } from '../../types';
 
 interface EmployeeDashboardProps {
   currentUser?: EmployeeItem;
+  documents: DocumentItem[];
   onNavigateToDocs: () => void;
   onNavigateToChat: () => void;
   onNavigateToDocDetail: (docId: string) => void;
@@ -23,6 +24,7 @@ interface EmployeeDashboardProps {
 
 export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
   currentUser,
+  documents,
   onNavigateToDocs,
   onNavigateToChat,
   onNavigateToDocDetail,
@@ -32,7 +34,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
   const stats = [
     {
       label: 'Accessible Documents',
-      value: '24',
+      value: String(documents.length),
       icon: FileText,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50/80',
@@ -46,7 +48,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
     },
     {
       label: 'AI Summaries',
-      value: '12',
+      value: String(documents.filter((doc) => doc.hasSummary).length),
       icon: Sparkles,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50/80',
@@ -60,74 +62,32 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
     },
   ];
 
-  const recentDocs = [
-    {
-      id: 'doc-1',
-      name: 'Company Leave Policy.pdf',
-      type: 'PDF',
-      category: 'Policy',
-      dept: 'HR Department',
-      time: '2 hours ago',
-      color: 'bg-red-500',
-    },
-    {
-      id: 'doc-2',
-      name: 'Engineering Guidelines.docx',
-      type: 'DOC',
-      category: 'Manual',
-      dept: 'Engineering Department',
-      time: '1 day ago',
-      color: 'bg-blue-600',
-    },
-    {
-      id: 'doc-4',
-      name: 'Remote Work Policy.pdf',
-      type: 'PDF',
-      category: 'Policy',
-      dept: 'Admin',
-      time: '2 days ago',
-      color: 'bg-red-500',
-    },
-    {
-      id: 'doc-6',
-      name: 'Project Reporting Template.xlsx',
-      type: 'XX',
-      category: 'Template',
-      dept: 'Engineering Department',
-      time: '3 days ago',
-      color: 'bg-emerald-600',
-    },
-    {
-      id: 'doc-8',
-      name: 'Employee Handbook.pdf',
-      type: 'PDF',
-      category: 'Manual',
-      dept: 'HR Department',
-      time: '4 days ago',
-      color: 'bg-red-500',
-    },
-  ];
+  const recentDocs = documents.slice(0, 5).map((doc) => ({
+    id: doc.id,
+    name: doc.name,
+    type: doc.type,
+    category: doc.category,
+    dept: doc.department,
+    time: doc.uploadDate,
+    color:
+      doc.type === 'PDF'
+        ? 'bg-red-500'
+        : doc.type === 'DOCX' || doc.type === 'DOC'
+        ? 'bg-blue-600'
+        : doc.type === 'XLSX'
+        ? 'bg-emerald-600'
+        : 'bg-slate-500',
+  }));
 
-  const recentSummaries = [
-    {
-      id: 'doc-1',
-      name: 'Company Leave Policy.pdf',
-      snippet: "This document outlines the company's leave policy including types of leave, eligibility...",
-      time: '1 day ago',
-    },
-    {
-      id: 'doc-4',
-      name: 'Remote Work Policy.pdf',
-      snippet: 'Guidelines for remote work arrangements, eligibility, and expectations for employees...',
-      time: '3 days ago',
-    },
-    {
-      id: 'doc-8',
-      name: 'Employee Handbook.pdf',
-      snippet: 'Covers company rules, code of conduct, benefits, and general policies for all employees...',
-      time: '5 days ago',
-    },
-  ];
+  const recentSummaries = documents
+    .filter((doc) => doc.hasSummary)
+    .slice(0, 3)
+    .map((doc) => ({
+      id: doc.id,
+      name: doc.name,
+      snippet: doc.summary || 'No summary available.',
+      time: doc.uploadDate,
+    }));
 
   const recentChats = [
     { title: 'What is our work-from-home policy?', time: '2 hours ago' },

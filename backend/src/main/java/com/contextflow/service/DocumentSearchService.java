@@ -48,7 +48,7 @@ public class DocumentSearchService {
 
         for (Document document : accessibleDocuments) {
 
-            List<DocumentChunk> chunks = documentChunkRepository.findAll();
+            List<DocumentChunk> chunks = documentChunkRepository.findByDocument(document);
             
             for(DocumentChunk chunk : chunks){
                 if (chunk.getEmbedding() == null) {

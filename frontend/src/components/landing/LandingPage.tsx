@@ -22,6 +22,7 @@ import {
 import { BrandLogo } from '../common/Illustrations';
 import { EmployeeItem } from '../../types';
 import { INITIAL_EMPLOYEES } from '../../data/mockData';
+import { AppleStyleShowcase } from './StyleShowcase';
 
 interface LandingPageProps {
   onLogin: (employee: EmployeeItem, portal: 'employee' | 'admin') => void;
@@ -99,8 +100,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
     }, 600);
   };
 
+  const handleScrollToLogin = () => {
+    document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   return (
-    <div className="min-h-screen lg:h-screen lg:max-h-screen flex flex-col justify-between bg-[#F8FAFC] text-slate-800 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-100 selection:text-blue-900 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-800 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-100 selection:text-blue-900 relative overflow-x-hidden">
       {/* Background Architectural Mesh & Subtle Lighting */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
@@ -122,11 +127,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             </div>
           </div>
 
+          {/* Apple-style Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-600">
+            <button
+              type="button"
+              onClick={() => document.getElementById('capabilities-showcase')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Capabilities
+            </button>
+            <button
+              type="button"
+              onClick={() => document.getElementById('security-showcase')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Security & RBAC
+            </button>
+            <button
+              type="button"
+              onClick={() => document.getElementById('specs-showcase')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Performance
+            </button>
+          </nav>
+
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => {
                 handleSwitchMode(loginMode === 'admin' ? 'employee' : 'admin');
-                document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
               className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer shadow-2xs group ${
                 loginMode === 'admin'
@@ -154,7 +184,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       </header>
 
       {/* Hero & Login Details Section */}
-      <main className="flex-1 z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-14 my-auto">
+      <main className="z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-14">
         
         {/* Left Column: SaaS Value Proposition */}
         <div 
@@ -464,6 +494,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           </div>
         </div>
       </main>
+
+      {/* Apple-Style Deep Feature Showcase with Scroll Animations */}
+      <AppleStyleShowcase onScrollToLogin={handleScrollToLogin} />
 
       {/* SaaS Minimal Footer */}
       <footer className="z-10 bg-white border-t border-slate-200/80 py-4 px-4 sm:px-6 lg:px-8 shrink-0">

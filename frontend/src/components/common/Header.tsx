@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Bell, Sun, Moon, ChevronDown, User, LogOut, CheckCircle2, Shield } from 'lucide-react';
+import { Search, Bell, Sun, Moon, ChevronDown, User, LogOut, CheckCircle2, Shield, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { EmployeeView, EmployeeItem } from '../../types';
 import { BrandLogo } from './Illustrations';
 
@@ -11,6 +11,8 @@ interface HeaderProps {
   darkMode: boolean;
   onToggleDarkMode: () => void;
   onSignOut?: () => void;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,6 +23,8 @@ export const Header: React.FC<HeaderProps> = ({
   darkMode,
   onToggleDarkMode,
   onSignOut,
+  isSidebarOpen = true,
+  onToggleSidebar,
 }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -61,8 +65,24 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 h-16 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-6 flex items-center justify-between transition-colors">
-      {/* Brand area */}
-      <div className="flex items-center">
+      {/* Brand area & Sidebar Toggle */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {onToggleSidebar && (
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="p-2 -ml-1 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer group"
+            title={isSidebarOpen ? "Slide sidebar closed" : "Slide sidebar open"}
+            aria-label="Toggle sidebar"
+          >
+            {isSidebarOpen ? (
+              <PanelLeftClose className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
+            ) : (
+              <PanelLeftOpen className="w-5 h-5 text-blue-600 group-hover:text-blue-700 transition-colors" />
+            )}
+          </button>
+        )}
+
         <button
           onClick={() => setActiveEmployeeView('dashboard')}
           className="text-left focus:outline-hidden cursor-pointer flex items-center transition-opacity hover:opacity-90"

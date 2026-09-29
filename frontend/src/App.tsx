@@ -1,5 +1,4 @@
-import React, {useEffect, useState } from 'react';
-import api from './api/axios';
+import React, { useState } from 'react';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
 import { SearchModal } from './components/common/SearchModal';
@@ -11,9 +10,8 @@ import { DocumentDetail } from './components/employee/DocumentDetail';
 import { EmployeeProfile } from './components/employee/EmployeeProfile';
 import { EmployeeActivity } from './components/employee/EmployeeActivity';
 import { AdminPage } from './components/admin/AdminPage';
-import { INITIAL_EMPLOYEES } from './data/mockData';
+import { INITIAL_DOCUMENTS, INITIAL_EMPLOYEES } from './data/mockData';
 import { EmployeeView, DocumentItem, EmployeeItem } from './types';
-
 
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,49 +20,11 @@ export function App() {
     INITIAL_EMPLOYEES.find((e) => e.empId === 'EMP1005') || INITIAL_EMPLOYEES[0]
   );
   const [activeEmployeeView, setActiveEmployeeView] = useState<EmployeeView>('dashboard');
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
   const [selectedDocId, setSelectedDocId] = useState<string>('doc-1');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        const response = await api.get('/api/documents');
-
-        const backendDocuments = response.data;
-
-        const mappedDocuments: DocumentItem[] = backendDocuments.map((doc: any) => ({
-          id: String(doc.id),
-          name: doc.fileName,
-          type: doc.fileName.toLowerCase().endsWith('.pdf')
-            ? 'PDF'
-            : doc.fileName.toLowerCase().endsWith('.docx')
-            ? 'DOCX'
-            : doc.fileName.toLowerCase().endsWith('.doc')
-            ? 'DOC'
-            : doc.fileName.toLowerCase().endsWith('.xlsx')
-            ? 'XLSX'
-            : 'OTHER',
-          category: 'General',
-          department: 'Organization',
-          uploadedBy: 'Admin',
-          uploadDate: 'Recently',
-          status: doc.status === 'UPLOADED' ? 'Ready' : 'Processing',
-          accessScope: 'Authorized Employees',
-          fileSize: `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB`,
-        }));
-
-        setDocuments(mappedDocuments);
-      } catch (error) {
-        console.error('Failed to fetch documents:', error);
-      }
-    };
-
-    if (isAuthenticated && currentPortal === 'employee') {
-      fetchDocuments();
-    }
-  }, [isAuthenticated, currentPortal]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const selectedDocument = documents.find((d) => d.id === selectedDocId) || documents[0];
 
@@ -112,18 +72,37 @@ export function App() {
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(!darkMode)}
         onSignOut={handleSignOut}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      {/* Main App Container */}
-      <div className="flex">
-        {/* Left Sidebar */}
+      {/* Main App Container with Closing Slide Sidebar */}
+      <div className="flex relative overflow-x-hidden min-h-[calc(100vh-4rem)]">
+        {/* Mobile Backdrop when sidebar is open */}
+        {isSidebarOpen && (
+          <div
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-slate-900/30 backdrop-blur-2xs z-20 lg:hidden transition-opacity"
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Left Sidebar with Smooth Closing Slide */}
         <Sidebar
           activeEmployeeView={activeEmployeeView}
-          setActiveEmployeeView={setActiveEmployeeView}
+          setActiveEmployeeView={(view) => {
+            setActiveEmployeeView(view);
+            if (window.innerWidth < 1024) {
+              setIsSidebarOpen(false);
+            }
+          }}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         />
 
         {/* Content Area */}
-        <main className="flex-1 p-4 lg:p-7 overflow-y-auto max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 lg:p-7 overflow-y-auto max-w-7xl mx-auto w-full transition-all duration-300">
           {activeEmployeeView === 'dashboard' && (
             <EmployeeDashboard
               currentUser={currentUser}
@@ -141,8 +120,8 @@ export function App() {
               currentUser={currentUser}
               onOpenDocDetail={handleOpenDocDetail}
               onNavigateHome={() => setActiveEmployeeView('dashboard')}
-              onUploadDocument={(newDoc)=>{
-                setDocuments((prev)=>[newDoc, ...prev]);
+              onUploadDocument={(newDoc) => {
+                setDocuments((prev) => [newDoc, ...prev]);
               }}
             />
           )}

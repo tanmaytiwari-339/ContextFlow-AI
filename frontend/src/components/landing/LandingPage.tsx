@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import {
   Lock,
   Mail,
@@ -22,7 +21,8 @@ import {
 } from 'lucide-react';
 import { BrandLogo } from '../common/Illustrations';
 import { EmployeeItem } from '../../types';
-
+import { INITIAL_EMPLOYEES } from '../../data/mockData';
+import { AppleStyleShowcase } from './StyleShowcase';
 
 interface LandingPageProps {
   onLogin: (employee: EmployeeItem, portal: 'employee' | 'admin') => void;
@@ -30,8 +30,8 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const [loginMode, setLoginMode] = useState<'employee' | 'admin'>('employee');
-  const [identifier, setIdentifier] = useState('EMP1006');
-  const [password, setPassword] = useState('');
+  const [identifier, setIdentifier] = useState('tanmay.tiwari@company.com');
+  const [password, setPassword] = useState('••••••••••••');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,19 +43,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
     setLoginMode(mode);
     setErrorMessage('');
     if (mode === 'admin') {
-      setIdentifier('');
-      setPassword('');
+      setIdentifier('admin@company.com');
+      setPassword('••••••••••••');
     } else {
-      setIdentifier('EMP1006');
-      setPassword('');
+      setIdentifier('tanmay.tiwari@company.com');
+      setPassword('••••••••••••');
     }
   };
 
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    setSuccessEmployee(null);
 
     if (!identifier.trim()) {
       setErrorMessage(
@@ -68,69 +67,45 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
     setIsLoading(true);
 
-    try{
-      const response = await axios.post(
-        'http://localhost:8081/api/auth/login',
-        {
-          employeeId: identifier.trim(),
-          password: password,
-        }
-      );
+    const trimmed = identifier.trim().toLowerCase();
 
-      const token = response.data;
+    // Match employee by email or ID
+    let matched = INITIAL_EMPLOYEES.find(
+      (emp) =>
+        emp.email.toLowerCase() === trimmed ||
+        emp.empId.toLowerCase() === trimmed
+    );
 
-      localStorage.setItem('token',token);
-
-      const payload = JSON.parse(atob(token.split('.')[1]));
-
-      const employeeId = payload.sub;
-      const backendRole = payload.role;
-
-      const employee: EmployeeItem = {
-        id: employeeId,
-        empId: employeeId,
-        name: employeeId,
-        email: '',
-        phone: '',
-        department: '',
-        position: '',
-        status: 'Active',
-        lastActive: new Date().toISOString(),
-        role: backendRole === 'EMPLOYEE' ? 'Employee' : 'System Admin',
-        accessScope:
-          backendRole === 'EMPLOYEE'
-            ? 'Personal Only'
-            : 'Organization Wide',
-      };
-
-      const portal = backendRole === 'EMPLOYEE' ? 'employee' : 'admin';
-
-      setSuccessEmployee(employee);
-
-      setTimeout(() => {
-        onLogin(employee, portal);
-      }, 400);
-      
-    }catch (error) {
-      console.error('Login failed:', error);
-
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
-          setErrorMessage('Invalid employee ID or password.');
-        } else {
-          setErrorMessage('Unable to connect to the backend server.');
-        }
+    // If in admin mode or entered admin credentials
+    if (!matched) {
+      if (loginMode === 'admin' || trimmed.includes('admin') || trimmed === 'adm1001') {
+        matched = INITIAL_EMPLOYEES.find((emp) => emp.role === 'System Admin') || INITIAL_EMPLOYEES[0];
       } else {
-        setErrorMessage('Login failed. Please try again.');
+        matched = INITIAL_EMPLOYEES.find((emp) => emp.empId === 'EMP1005') || INITIAL_EMPLOYEES[1];
       }
-
-    } finally {
-      setIsLoading(false);
     }
+
+    const isTargetAdmin =
+      loginMode === 'admin' ||
+      matched?.role === 'System Admin' ||
+      trimmed.includes('admin') ||
+      trimmed === 'adm1001';
+
+    setTimeout(() => {
+      setIsLoading(false);
+      setSuccessEmployee(matched);
+      setTimeout(() => {
+        onLogin(matched, isTargetAdmin ? 'admin' : 'employee');
+      }, 400);
+    }, 600);
+  };
+
+  const handleScrollToLogin = () => {
+    document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   return (
-    <div className="min-h-screen lg:h-screen lg:max-h-screen flex flex-col justify-between bg-[#F8FAFC] text-slate-800 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-100 selection:text-blue-900 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-800 font-['Plus_Jakarta_Sans',sans-serif] selection:bg-blue-100 selection:text-blue-900 relative overflow-x-hidden">
       {/* Background Architectural Mesh & Subtle Lighting */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl" />
@@ -152,11 +127,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             </div>
           </div>
 
+          {/* Apple-style Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-600">
+            <button
+              type="button"
+              onClick={() => document.getElementById('capabilities-showcase')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Capabilities
+            </button>
+            <button
+              type="button"
+              onClick={() => document.getElementById('security-showcase')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Security & RBAC
+            </button>
+            <button
+              type="button"
+              onClick={() => document.getElementById('specs-showcase')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:text-blue-600 transition-colors cursor-pointer"
+            >
+              Performance
+            </button>
+          </nav>
+
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => {
                 handleSwitchMode(loginMode === 'admin' ? 'employee' : 'admin');
-                document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}
               className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer shadow-2xs group ${
                 loginMode === 'admin'
@@ -184,7 +184,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       </header>
 
       {/* Hero & Login Details Section */}
-      <main className="flex-1 z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-14 my-auto">
+      <main className="z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-14">
         
         {/* Left Column: SaaS Value Proposition */}
         <div 
@@ -494,6 +494,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           </div>
         </div>
       </main>
+
+      {/* Apple-Style Deep Feature Showcase with Scroll Animations */}
+      <AppleStyleShowcase onScrollToLogin={handleScrollToLogin} />
 
       {/* SaaS Minimal Footer */}
       <footer className="z-10 bg-white border-t border-slate-200/80 py-4 px-4 sm:px-6 lg:px-8 shrink-0">

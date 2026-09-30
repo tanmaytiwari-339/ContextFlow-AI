@@ -33,13 +33,22 @@ public class ActivityService {
     }
 
     public List<Activity> getMyActivities() {
-
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
-
         User user = (User) authentication.getPrincipal();
 
-        return activityRepository.findByUserOrderByCreatedAtDesc(user);
+        List<String> accountActions = List.of(
+                "LOGIN",
+                "LOGOUT",
+                "PASSWORD_CHANGED",
+                "PROFILE_UPDATED"
+        );
+
+        return activityRepository
+                .findByUserAndActionInOrderByCreatedAtDesc(
+                        user,
+                        accountActions
+                );
     }
 
     public List<Activity> getMyProductActivities() {

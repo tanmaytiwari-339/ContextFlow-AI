@@ -59,8 +59,9 @@ export interface ChatMessage {
   keyPoints?: string[];
   sources?: {
     id: string;
+    documentId: number;
     title: string;
-    docType: DocType;
+    docType: string;
     page: string;
   }[];
 }

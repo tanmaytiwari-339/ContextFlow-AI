@@ -6,7 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.contextflow.entity.User;
+import com.contextflow.entity.Document;
+import com.contextflow.entity.DocumentChunk;
 import com.contextflow.entity.SearchResult;
+
+import com.contextflow.service.ChatMessageService;
+import com.contextflow.dto.ChatResponse;
+import com.contextflow.dto.ChatSource;
 
 @Service
 public class ChatService {
@@ -14,15 +20,20 @@ public class ChatService {
     private final DocumentSearchService documentSearchService;
     private final OllamaChatService ollamaChatService;
     private final ActivityService activityService;
+    private final ChatMessageService chatMessageService;
 
     public ChatService(
-        DocumentSearchService documentSearchService,
-        OllamaChatService ollamaChatService,
-        ActivityService activityService) {
+            DocumentSearchService documentSearchService,
+            OllamaChatService ollamaChatService,
+            ActivityService activityService,
+            ChatMessageService chatMessageService
+        ) {
 
         this.documentSearchService = documentSearchService;
         this.ollamaChatService = ollamaChatService;
         this.activityService = activityService;
+        this.chatMessageService = chatMessageService;
+
     }
     private User getLoggedInUser() {
         Authentication authentication =
@@ -31,7 +42,7 @@ public class ChatService {
         return (User) authentication.getPrincipal();
     }
 
-    public String askQuestion(String question){
+    public ChatResponse askQuestion(Long sessionId, String question){
 
         List<SearchResult> results =
                 documentSearchService.search(question);
@@ -43,7 +54,10 @@ public class ChatService {
         }
 
         if (results.isEmpty()) {
-            return "I could not find relevant information in the available documents.";
+            return new ChatResponse(
+                    "I could not find relevant information in the available documents.",
+                    List.of()
+            );
         }
 
         StringBuilder context = new StringBuilder();
@@ -76,12 +90,33 @@ public class ChatService {
 
         String response = ollamaChatService.generateResponse(prompt);
 
+        chatMessageService.saveMessage(
+                sessionId,
+                question,
+                response
+        );
+
+        List<ChatSource> sources = results.stream()
+            .map(result -> {
+                DocumentChunk chunk = result.getChunk();
+                Document document = chunk.getDocument();
+
+                return new ChatSource(
+                        document.getId(),
+                        document.getFileName(),
+                        document.getFileType(),
+                        chunk.getChunkIndex()
+                );
+            })
+            .toList();
+
+
         activityService.logActivity(
                 getLoggedInUser(),
                 "CHAT_USED",
                 "Used Knowledge Chat"
         );
 
-        return response;
+        return new ChatResponse(response, sources);
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import {
   MessageSquare,
@@ -15,7 +15,7 @@ import {
   CheckCircle2,
   FileText
 } from 'lucide-react';
-import { RECENT_CHATS, INITIAL_CHAT_MESSAGES, SUGGESTED_QUESTIONS } from '../../data/mockData';
+import { SUGGESTED_QUESTIONS } from '../../data/mockData';
 import { ChatMessage, ChatThread } from '../../types';
 
 interface KnowledgeChatProps {
@@ -23,13 +23,76 @@ interface KnowledgeChatProps {
 }
 
 export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail }) => {
-  const [threads, setThreads] = useState<ChatThread[]>(RECENT_CHATS);
-  const [activeThreadId, setActiveThreadId] = useState<string>('chat-1');
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_CHAT_MESSAGES);
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [liked, setLiked] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+  const loadChatSessions = async () => {
+      try {
+        const response = await api.get('/api/chat/sessions');
+
+        const savedThreads: ChatThread[] = response.data.map((session: any) => ({
+          id: String(session.id),
+          title: session.title,
+          timestamp: new Date(session.updatedAt).toLocaleString(),
+          messagesCount: 0
+        }));
+
+        setThreads(savedThreads);
+      } catch (error) {
+        console.error('Failed to load chat sessions:', error);
+      }
+    };
+
+    loadChatSessions();
+  }, []);
+
+
+  const createChatSession = async (title: string) => {
+    const response = await api.post('/api/chat/sessions', null, {
+      params: { title },
+    });
+
+    return response.data;
+  };
+
+  const loadChatMessages = async (sessionId: string) => {
+    try {
+      const response = await api.get(
+        `/api/chat/sessions/${sessionId}/messages`
+      );
+
+      const loadedMessages: ChatMessage[] = [];
+
+      response.data.forEach((message: any) => {
+        loadedMessages.push({
+          id: String(message.id) + '-user',
+          sender: 'user',
+          text: message.question,
+          timestamp: new Date(message.createdAt).toLocaleString()
+        });
+
+        loadedMessages.push({
+          id: String(message.id) + '-assistant',
+          sender: 'assistant',
+          text: message.answer,
+          timestamp: new Date(message.createdAt).toLocaleString()
+        });
+      });
+
+      setMessages(loadedMessages);
+      setActiveThreadId(sessionId);
+      setLiked(null);
+    } catch (error) {
+      console.error('Failed to load chat messages:', error);
+    }
+  };
+
 
   const handleSendMessage = async (textToSend?: string) => {
     const query = textToSend || inputText;
@@ -42,37 +105,102 @@ export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail })
       text: query,
       timestamp: 'Just now'
     };
+
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
-    
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
-      const response = await api.get('/api/chat',{
+      let sessionId = activeThreadId;
+
+      // Create a real database session for the first message
+      if (!sessionId) {
+        const session = await createChatSession(
+          query.length > 35
+            ? `${query.substring(0, 35)}...`
+            : query
+        );
+
+        sessionId = String(session.id);
+
+        const newThread: ChatThread = {
+          id: sessionId,
+          title: session.title,
+          timestamp: 'Just now',
+          messagesCount: 0
+        };
+
+        setThreads((prev) => [newThread, ...prev]);
+        setActiveThreadId(sessionId);
+      }
+
+      console.log('Sending chat request with sessionId:', sessionId);
+
+      const response = await api.get('/api/chat', {
         params: {
-          question: query
-        }
+          sessionId: sessionId,
+          question: query,
+        },
       });
+
+      console.log('Chat response:', response.data);
 
       const reply: ChatMessage = {
         id: `msg-${Date.now() + 1}`,
         sender: 'assistant',
-        text: response.data,
-        timestamp: 'Just now'
+        text: response.data.answer,
+        timestamp: 'Just now',
+        sources: (response.data.sources || [])
+          .filter(
+            (source: any, index: number, self: any[]) =>
+              index ===
+              self.findIndex(
+                (item: any) =>
+                  item.documentId === source.documentId
+              )
+          )
+          .map((source: any) => ({
+            id: String(source.documentId),
+            documentId: source.documentId,
+            title: source.title,
+            docType: source.docType,
+            page: 'Relevant sections'
+          }))
       };
 
       setMessages((prev) => [...prev, reply]);
-    }catch(error){
+
+      // IMPORTANT: use sessionId, not activeThreadId
+      setThreads((prev) =>
+        prev.map((thread) =>
+          thread.id === sessionId
+            ? {
+                ...thread,
+                messagesCount: thread.messagesCount + 2,
+                lastMessage: query,
+                timestamp: 'Just now'
+              }
+            : thread
+        )
+      );
+
+    } catch (error: any) {
       console.error('Failed to get chat response:', error);
+      console.error('Backend error:', error.response?.data);
 
       const errorMessage: ChatMessage = {
         id: `msg-${Date.now() + 1}`,
         sender: 'assistant',
-        text: 'Sorry, I could not process your question. Please try again.',
+        text:
+          error.response?.data?.message ||
+          error.response?.data ||
+          'Sorry, I could not process your question. Please try again.',
         timestamp: 'Just now'
       };
 
       setMessages((prev) => [...prev, errorMessage]);
-    }finally {
+
+    } finally {
       setIsLoading(false);
     }
   };
@@ -84,15 +212,10 @@ export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail })
   };
 
   const startNewChat = () => {
-    const newThread: ChatThread = {
-      id: `chat-${Date.now()}`,
-      title: 'New Knowledge Conversation',
-      timestamp: 'Just now',
-      messagesCount: 0
-    };
-    setThreads([newThread, ...threads]);
-    setActiveThreadId(newThread.id);
+    setActiveThreadId(null);
     setMessages([]);
+    setInputText('');
+    setLiked(null);
   };
 
   return (
@@ -139,7 +262,7 @@ export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail })
                   return (
                     <button
                       key={t.id}
-                      onClick={() => setActiveThreadId(t.id)}
+                      onClick={() => loadChatMessages(t.id)}
                       className={`w-full text-left p-2.5 rounded-xl text-xs font-semibold transition-all flex items-start gap-2.5 ${
                         isActive
                           ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/80 shadow-2xs'
@@ -164,12 +287,6 @@ export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail })
           {/* Conversation history */}
           <div className="flex-1 overflow-y-auto space-y-5 pr-2">
             {/* Date divider */}
-            <div className="text-center my-1">
-              <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
-                Sep 10, 2025
-              </span>
-            </div>
-
             {messages.length === 0 ? (
               <div className="h-64 flex flex-col items-center justify-center text-center text-slate-400">
                 <MessageSquare className="w-10 h-10 text-slate-300 mb-2" />
@@ -288,7 +405,7 @@ export const KnowledgeChat: React.FC<KnowledgeChatProps> = ({ onOpenDocDetail })
                                     </div>
                                   </div>
                                   <button
-                                    onClick={() => onOpenDocDetail('doc-1')}
+                                    onClick={() => onOpenDocDetail(String(s.documentId))}
                                     className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50"
                                   >
                                     <span>Open</span>

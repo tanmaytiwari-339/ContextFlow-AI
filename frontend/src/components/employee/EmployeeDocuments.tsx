@@ -31,6 +31,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 //import { ThreeDocumentVault } from '../common/ThreeDocumentVault';
 import { DocumentItem, EmployeeItem, DocType } from '../../types';
+import api from '../../api/axios';
 
 interface EmployeeDocumentsProps {
   documents: DocumentItem[];
@@ -121,89 +122,82 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
     }
   };
 
-  const handleUploadSubmit = (e: React.FormEvent) => {
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadFileName.trim()) return;
+
+    if (!uploadedFile) {
+      showToast('Please select a file first.');
+      return;
+    }
 
     setIsUploading(true);
-    setUploadProgress(25);
+    setUploadProgress(30);
 
-    const progressTimer = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 85) {
-          clearInterval(progressTimer);
-          return 90;
-        }
-        return prev + 25;
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+
+      const response = await api.post('/api/documents', formData, {
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percent);
+          }
+        },
       });
-    }, 150);
 
-    setTimeout(() => {
-      clearInterval(progressTimer);
-      setUploadProgress(100);
-
-      const newDocId = `doc-${Date.now()}`;
-      const formattedDate = new Date().toISOString().split('T')[0];
-      const sizeInMB = uploadedFile
-        ? (uploadedFile.size / (1024 * 1024)).toFixed(1) + ' MB'
-        : '2.1 MB';
-
-      const cleanDocTitle = uploadFileName.trim();
-      const uploaderName = currentUser?.name || 'You';
-      const uploaderId = currentUser?.empId || 'EMP1005';
-      const userDept = currentUser?.department || uploadDept || 'General';
-
-      const generatedSummary =
-        summaryStyle === 'actions'
-          ? `Action-oriented breakdown for "${cleanDocTitle}". Prepared exclusively for ${uploaderName}. Identifies direct personal takeaways, execution milestones, and key checkpoints. Stored strictly in your personal workspace.`
-          : summaryStyle === 'detailed'
-          ? `Comprehensive personal study summary of "${cleanDocTitle}". Analyzes core concepts, contextual foundations, and key definitions for your individual reference. Completely private to your account.`
-          : `Executive summary for "${cleanDocTitle}". Synthesizes the primary objectives, core insights, and critical points of this personal document for ${uploaderName}. Stored with strict zero-leak privacy—accessible only to you.`;
-
-      const keyTakeaways = [
-        `Strictly private to ${uploaderName} (${uploaderId}) — zero visibility to other employees or public search.`,
-        `Automatically processed and summarized with AI for personal study and quick recall.`,
-        `Extracted high-priority concepts from ${sizeInMB} (${uploadDocType} format) categorized as ${uploadCategory}.`,
-        `Ready for on-demand review, copyable summary export, and personal Q&A.`
-      ];
+      const doc = response.data;
 
       const newDoc: DocumentItem = {
-        id: newDocId,
-        name: cleanDocTitle,
-        type: uploadDocType,
-        category: uploadCategory,
-        department: userDept,
-        uploadedBy: uploaderName,
-        uploaderEmpId: uploaderId,
+        id: String(doc.id),
+        name: doc.fileName,
+        type:
+          doc.fileName.toLowerCase().endsWith('.pdf')
+            ? 'PDF'
+            : doc.fileName.toLowerCase().endsWith('.docx')
+            ? 'DOCX'
+            : doc.fileName.toLowerCase().endsWith('.doc')
+            ? 'DOC'
+            : doc.fileName.toLowerCase().endsWith('.xlsx')
+            ? 'XLSX'
+            : 'OTHER',
+        category: 'Personal Notes',
+        department: currentUser?.department || 'General',
+        uploadedBy: currentUser?.name || 'You',
+        uploaderEmpId: currentUser?.empId,
         isPersonal: true,
-        uploadDate: formattedDate,
-        status: 'Ready',
+        uploadDate: new Date().toISOString().split('T')[0],
+        status: doc.status === 'COMPLETED' ? 'Ready' : 'Processing',
         accessScope: 'Personal Only',
-        description:
-          uploadDescription.trim() ||
-          `Personal ${uploadCategory.toLowerCase()} document uploaded by ${uploaderName}. Private to your account.`,
-        pages: Math.floor(Math.random() * 8) + 2,
-        fileSize: sizeInMB,
-        summaryText: generatedSummary,
-        keyTakeaways: keyTakeaways,
-        docCategory: uploadCategory
+        fileSize: `${(doc.fileSize / 1024 / 1024).toFixed(2)} MB`,
+        summaryText: doc.summary || undefined,
+        description: uploadDescription.trim() || undefined,
       };
 
-      if (onUploadDocument) {
-        onUploadDocument(newDoc);
-      }
+      onUploadDocument?.(newDoc);
 
-      setTimeout(() => {
-        setIsUploading(false);
-        setIsUploadSectionOpen(false);
-        setUploadedFile(null);
-        setUploadFileName('');
-        setUploadDescription('');
-        setUploadProgress(0);
-        showToast(`Personal document "${newDoc.name}" uploaded & summarized!`);
-        setSummaryModalDoc(newDoc);
-      }, 350);
-    }, 850);
+      setUploadProgress(100);
+      showToast(`"${doc.fileName}" uploaded successfully.`);
+
+      setUploadedFile(null);
+      setUploadFileName('');
+      setUploadDescription('');
+      setIsUploadSectionOpen(false);
+    } catch (error: any) {
+      console.error('Document upload failed:', error);
+
+      const message =
+        error.response?.data?.message ||
+        error.response?.data ||
+        'Document upload failed.';
+
+      showToast(String(message));
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   // Filter docs with strict personal privacy enforcement

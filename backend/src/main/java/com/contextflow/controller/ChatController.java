@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.contextflow.dto.ChatResponse;
 import com.contextflow.service.ChatService;
 
 @RestController 
@@ -18,8 +19,11 @@ public class ChatController {
     }
 
     @GetMapping
-    public String chat(@RequestParam String question) {
-        return chatService.askQuestion(question);
+    public ChatResponse chat(
+            @RequestParam Long sessionId,
+            @RequestParam String question) {
+
+        return chatService.askQuestion(sessionId, question);
     }
     
 }

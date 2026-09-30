@@ -12,6 +12,7 @@ import { EmployeeActivity } from './components/employee/EmployeeActivity';
 import { AdminPage } from './components/admin/AdminPage';
 import { INITIAL_DOCUMENTS, INITIAL_EMPLOYEES } from './data/mockData';
 import { EmployeeView, DocumentItem, EmployeeItem } from './types';
+import api from './api/axios';
 
 export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,12 +41,9 @@ export function App() {
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
-        const response = await fetch('/api/documents');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch documents: ${response.status}`);
-        }
+        const response = await api.get('/api/documents');
 
-        const backendDocuments = await response.json();
+        const backendDocuments = response.data;
 
         const mappedDocuments: DocumentItem[] = backendDocuments.map(
           (doc: any) => ({

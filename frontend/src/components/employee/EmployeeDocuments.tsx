@@ -23,11 +23,14 @@ import {
   Trash2,
   AlertCircle,
   FileUp,
-  Paperclip
+  Paperclip,
+  Lock,
+  Copy,
+  CheckCircle2
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+//import { ThreeDocumentVault } from '../common/ThreeDocumentVault';
 import { DocumentItem, EmployeeItem, DocType } from '../../types';
-
 
 interface EmployeeDocumentsProps {
   documents: DocumentItem[];
@@ -35,7 +38,6 @@ interface EmployeeDocumentsProps {
   onOpenDocDetail: (docId: string) => void;
   onNavigateHome: () => void;
   onUploadDocument?: (newDoc: DocumentItem) => void;
-
 }
 
 export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
@@ -48,28 +50,34 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedDept, setSelectedDept] = useState('All');
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'company' | 'personal'>('all');
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'table' | 'grid' | 'vault'>('table');
 
-   const [isUploadSectionOpen, setIsUploadSectionOpen] = useState(false);
+  // Employee Personal Document Upload Section
+  const [isUploadSectionOpen, setIsUploadSectionOpen] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadFileName, setUploadFileName] = useState('');
   const [uploadDocType, setUploadDocType] = useState<DocType>('PDF');
-  const [uploadDept, setUploadDept] = useState(currentUser?.department || 'Engineering');
-  const [uploadCategory, setUploadCategory] = useState('Policy');
-  const [uploadAccessScope, setUploadAccessScope] = useState('Organization Wide');
+  const [uploadDept, setUploadDept] = useState(currentUser?.department || 'General');
+  const [uploadCategory, setUploadCategory] = useState('Personal Notes');
+  const [summaryStyle, setSummaryStyle] = useState<'executive' | 'detailed' | 'actions'>('executive');
   const [uploadDescription, setUploadDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [quickInspectDoc, setQuickInspectDoc] = useState<DocumentItem | null>(null);
+  const [summaryModalDoc, setSummaryModalDoc] = useState<DocumentItem | null>(null);
+  const [copiedSummary, setCopiedSummary] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
   };
+
   const handleFileSelect = (file: File) => {
     setUploadedFile(file);
     const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
@@ -86,6 +94,7 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
     else if (['PPT', 'PPTX'].includes(ext)) setUploadDocType('PPTX');
     else setUploadDocType('OTHER');
   };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -104,6 +113,7 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
       handleFileSelect(e.dataTransfer.files[0]);
     }
   };
+
   const handleRemoveFile = () => {
     setUploadedFile(null);
     if (fileInputRef.current) {
@@ -138,33 +148,51 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
         ? (uploadedFile.size / (1024 * 1024)).toFixed(1) + ' MB'
         : '2.1 MB';
 
+      const cleanDocTitle = uploadFileName.trim();
+      const uploaderName = currentUser?.name || 'You';
+      const uploaderId = currentUser?.empId || 'EMP1005';
+      const userDept = currentUser?.department || uploadDept || 'General';
+
+      const generatedSummary =
+        summaryStyle === 'actions'
+          ? `Action-oriented breakdown for "${cleanDocTitle}". Prepared exclusively for ${uploaderName}. Identifies direct personal takeaways, execution milestones, and key checkpoints. Stored strictly in your personal workspace.`
+          : summaryStyle === 'detailed'
+          ? `Comprehensive personal study summary of "${cleanDocTitle}". Analyzes core concepts, contextual foundations, and key definitions for your individual reference. Completely private to your account.`
+          : `Executive summary for "${cleanDocTitle}". Synthesizes the primary objectives, core insights, and critical points of this personal document for ${uploaderName}. Stored with strict zero-leak privacy—accessible only to you.`;
+
+      const keyTakeaways = [
+        `Strictly private to ${uploaderName} (${uploaderId}) — zero visibility to other employees or public search.`,
+        `Automatically processed and summarized with AI for personal study and quick recall.`,
+        `Extracted high-priority concepts from ${sizeInMB} (${uploadDocType} format) categorized as ${uploadCategory}.`,
+        `Ready for on-demand review, copyable summary export, and personal Q&A.`
+      ];
+
       const newDoc: DocumentItem = {
         id: newDocId,
-        name: uploadFileName.trim(),
+        name: cleanDocTitle,
         type: uploadDocType,
         category: uploadCategory,
-        department: uploadDept,
-        uploadedBy: currentUser?.name || 'Self Upload',
+        department: userDept,
+        uploadedBy: uploaderName,
+        uploaderEmpId: uploaderId,
+        isPersonal: true,
         uploadDate: formattedDate,
         status: 'Ready',
-        accessScope: uploadAccessScope,
+        accessScope: 'Personal Only',
         description:
           uploadDescription.trim() ||
-          `Employee uploaded document for ${uploadDept} team requirements. Verified and ready for team collaboration.`,
+          `Personal ${uploadCategory.toLowerCase()} document uploaded by ${uploaderName}. Private to your account.`,
         pages: Math.floor(Math.random() * 8) + 2,
         fileSize: sizeInMB,
-        summaryText: `This authorized document was directly uploaded by ${currentUser?.name || 'an employee'} for ${uploadDept} department needs. All clauses have been verified and processed by the semantic index engine.`,
-        keyTakeaways: [
-          `Directly uploaded and verified for ${uploadDept} operations`,
-          `Access scope set to ${uploadAccessScope} for compliant internal usage`,
-          `Semantic indexing complete - searchable across global search and Knowledge Chat`
-        ],
+        summaryText: generatedSummary,
+        keyTakeaways: keyTakeaways,
         docCategory: uploadCategory
       };
 
       if (onUploadDocument) {
         onUploadDocument(newDoc);
       }
+
       setTimeout(() => {
         setIsUploading(false);
         setIsUploadSectionOpen(false);
@@ -172,13 +200,29 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
         setUploadFileName('');
         setUploadDescription('');
         setUploadProgress(0);
-        showToast(`Document "${newDoc.name}" uploaded successfully!`);
+        showToast(`Personal document "${newDoc.name}" uploaded & summarized!`);
+        setSummaryModalDoc(newDoc);
       }, 350);
     }, 850);
   };
 
-  // Filter docs
+  // Filter docs with strict personal privacy enforcement
   const filtered = documents.filter((doc) => {
+    // If a document is personal, ONLY show it if it belongs to the logged-in employee!
+    const isPersonal = doc.accessScope === 'Personal Only' || doc.isPersonal;
+    if (isPersonal) {
+      const isMine =
+        (currentUser?.empId && doc.uploaderEmpId === currentUser.empId) ||
+        (currentUser?.name && doc.uploadedBy === currentUser.name);
+      if (!isMine) {
+        return false;
+      }
+    }
+
+    // Filter by Scope tab
+    if (scopeFilter === 'personal' && !isPersonal) return false;
+    if (scopeFilter === 'company' && isPersonal) return false;
+
     const matchesSearch =
       doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -192,6 +236,13 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
     const matchesDept = selectedDept === 'All' || doc.department === selectedDept;
     return matchesSearch && matchesType && matchesDept;
   });
+
+  const myPersonalDocsCount = documents.filter(
+    (d) =>
+      (d.accessScope === 'Personal Only' || d.isPersonal) &&
+      ((currentUser?.empId && d.uploaderEmpId === currentUser.empId) ||
+        (currentUser?.name && d.uploadedBy === currentUser.name))
+  ).length;
 
   const toggleSelectAll = () => {
     if (selectedDocs.length === filtered.length) {
@@ -218,7 +269,7 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
   return (
     <div className="space-y-6">
       {/* Toast Notification */}
-      { <AnimatePresence>
+      <AnimatePresence>
         {toastMessage && (
           <motion.div
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -230,7 +281,7 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
             <span>{toastMessage}</span>
           </motion.div>
         )}
-      </AnimatePresence> }
+      </AnimatePresence>
 
       {/* Breadcrumb & Header with 3D Documents Background Image */}
       <div 
@@ -256,6 +307,55 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
             Browse, inspect, and query authorized enterprise documents, policy guidelines, and handbooks.
           </p>
         </div>
+      </div>
+
+      {/* Scope Segment Tabs: All, Company Policies, My Personal Documents */}
+      <div className="flex items-center gap-2 select-none overflow-x-auto pb-0.5">
+        <button
+          type="button"
+          onClick={() => setScopeFilter('all')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            scopeFilter === 'all'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <span>All Documents</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setScopeFilter('company')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            scopeFilter === 'company'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <span>Company Policies & Handbooks</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setScopeFilter('personal')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            scopeFilter === 'personal'
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-200'
+          }`}
+        >
+          <Lock className="w-3.5 h-3.5" />
+          <span>My Personal Documents</span>
+          {myPersonalDocsCount > 0 && (
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                scopeFilter === 'personal' ? 'bg-amber-700 text-white' : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {myPersonalDocsCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Filter Bar */}
@@ -353,13 +453,13 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
             onClick={() => setIsUploadSectionOpen(!isUploadSectionOpen)}
             className="text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-4 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
           >
-             <UploadCloud className="w-3.5 h-3.5" />
-            <span>{isUploadSectionOpen ? 'Close Upload' : 'Upload Document'}</span>
+            <UploadCloud className="w-3.5 h-3.5" />
+            <span>{isUploadSectionOpen ? 'Close Upload' : 'Upload Personal Document'}</span>
           </button>
         </div>
       </div>
 
-            {/* Upload Document Section (Direct Employee Upload) */}
+      {/* Upload Document Section (Personal Employee Upload & Summarize) */}
       <AnimatePresence>
         {isUploadSectionOpen && (
           <motion.div
@@ -369,21 +469,22 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="bg-white rounded-2xl p-5 md:p-6 border-2 border-blue-200/90 shadow-md space-y-5">
+            <div className="bg-white rounded-2xl p-5 md:p-6 border-2 border-amber-200/90 shadow-md space-y-5">
               <div className="flex items-start justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                    <UploadCloud className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+                    <Lock className="w-5 h-5" />
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                      Upload Document to Workspace
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                        Employee Self-Service
+                      Upload & Summarize Personal Document
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" />
+                        Private to You Only
                       </span>
                     </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                      Upload files, guides, spreadsheets, or department policies to instantly index them into your team's knowledge vault.
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Upload your personal notes, drafts, reports, or learning files for instant AI summarization. Personal documents are strictly private to your account and will not be visible to other employees.
                     </p>
                   </div>
                 </div>
@@ -395,6 +496,17 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+
+              {/* Privacy Guarantee Banner (Explaining no access scope is required) */}
+              <div className="p-3 bg-amber-50/70 border border-amber-200/90 rounded-xl flex items-start gap-2.5">
+                <Lock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-xs">
+                  <p className="font-bold text-amber-900">Personal & Private Use Only</p>
+                  <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                    No access scope needed. This document is saved strictly for your personal use ({currentUser?.name || 'You'}), will only be shown to you, and is automatically summarized with AI upon upload.
+                  </p>
+                </div>
               </div>
 
               <form onSubmit={handleUploadSubmit} className="space-y-4">
@@ -421,15 +533,15 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                       onClick={() => fileInputRef.current?.click()}
                       className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
                         dragActive
-                          ? 'border-blue-500 bg-blue-50/80 scale-[1.005]'
-                          : 'border-slate-300 hover:border-blue-400 bg-slate-50/60 hover:bg-blue-50/20'
+                          ? 'border-amber-500 bg-amber-50/80 scale-[1.005]'
+                          : 'border-slate-300 hover:border-amber-400 bg-slate-50/60 hover:bg-amber-50/20'
                       }`}
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-2xs mx-auto flex items-center justify-center text-blue-600 mb-2">
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-2xs mx-auto flex items-center justify-center text-amber-600 mb-2">
                         <UploadCloud className="w-6 h-6 animate-pulse" />
                       </div>
-                       <p className="text-xs font-bold text-slate-800">
-                        Drag and drop your file here, or{' '}
+                      <p className="text-xs font-bold text-slate-800">
+                        Drag and drop your personal file here, or{' '}
                         <span className="text-blue-600 underline font-extrabold">browse files</span>
                       </p>
                       <p className="text-[11px] text-slate-500 mt-1">
@@ -437,22 +549,22 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                       </p>
                     </div>
                   ) : (
-                    <div className="p-3.5 bg-blue-50/50 rounded-2xl border border-blue-200 flex items-center justify-between">
+                    <div className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-200 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                        <div className="w-10 h-10 rounded-xl bg-amber-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                           {uploadDocType}
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-900">{uploadedFile.name}</p>
                           <p className="text-[11px] text-slate-500">
-                            {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB · File ready for semantic indexing
+                            {(uploadedFile.size / (1024 * 1024)).toFixed(2)} MB · Ready for private AI summarization
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <button
-                         type="button"
+                          type="button"
                           onClick={() => fileInputRef.current?.click()}
                           className="text-xs font-semibold text-blue-600 hover:underline px-2 py-1 cursor-pointer"
                         >
@@ -470,7 +582,8 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                     </div>
                   )}
                 </div>
-                 {/* Metadata Fields Grid */}
+
+                {/* Metadata Fields Grid (NO access scope selector) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -480,9 +593,9 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                       type="text"
                       value={uploadFileName}
                       onChange={(e) => setUploadFileName(e.target.value)}
-                      placeholder="e.g. Q3 Engineering Architecture Guidelines"
+                      placeholder="e.g. My Q3 Engineering Notes & Study Guide"
                       required
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-amber-500 focus:bg-white font-medium"
                     />
                   </div>
 
@@ -493,7 +606,7 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                     <select
                       value={uploadDocType}
                       onChange={(e) => setUploadDocType(e.target.value as DocType)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium cursor-pointer"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-amber-500 focus:bg-white font-medium cursor-pointer"
                     >
                       <option value="PDF">PDF Document</option>
                       <option value="DOCX">Word Document (.docx)</option>
@@ -505,65 +618,49 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Department *
-                    </label>
-                    <select
-                      value={uploadDept}
-                      onChange={(e) => setUploadDept(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium cursor-pointer"
-                    >
-                      <option value="Engineering">Engineering</option>
-                      <option value="HR">HR</option>
-                      <option value="Finance">Finance</option>
-                      <option value="Product">Product</option>
-                       <option value="Admin">Admin</option>
-                      <option value="IT">IT</option>
-                      <option value="Operations">Operations</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Category *
+                      Personal Category
                     </label>
                     <select
                       value={uploadCategory}
                       onChange={(e) => setUploadCategory(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium cursor-pointer"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-amber-500 focus:bg-white font-medium cursor-pointer"
                     >
-                      <option value="Policy">Policy</option>
-                      <option value="Handbook">Handbook</option>
-                      <option value="Technical">Technical</option>
-                      <option value="Financial">Financial</option>
-                      <option value="Security">Security</option>
-                      <option value="Guide">Guide</option>
-                      <option value="Report">Report</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Access Scope *
-                    </label>
-                    <select
-                      value={uploadAccessScope}
-                      onChange={(e) => setUploadAccessScope(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium cursor-pointer"
-                    >
-                      <option value="Organization Wide">Organization Wide (All Staff)</option>
-                      <option value="Department Only">Department Only ({uploadDept})</option>
-                      <option value="Personal Only">Personal Only (Private to you)</option>
+                      <option value="Personal Notes">Personal Notes</option>
+                      <option value="Study Material">Study Material</option>
+                      <option value="Research & Drafts">Research & Drafts</option>
+                      <option value="Report">Personal Report</option>
+                      <option value="Contract / Agreement">Personal Contract / Agreement</option>
+                      <option value="Reference Guide">Reference Guide</option>
+                      <option value="Other">Other Document</option>
                     </select>
                   </div>
 
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Uploaded By
+                      AI Summary Focus
+                    </label>
+                    <select
+                      value={summaryStyle}
+                      onChange={(e) => setSummaryStyle(e.target.value as any)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-amber-500 focus:bg-white font-medium cursor-pointer"
+                    >
+                      <option value="executive">Executive Summary (High Level Overview)</option>
+                      <option value="detailed">Comprehensive Breakdown (Detailed Sections)</option>
+                      <option value="actions">Key Action Items & Checkpoints</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Owner & Privacy Status
                     </label>
                     <div className="px-3 py-2 bg-slate-100/80 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold flex items-center justify-between">
-                      <span>{currentUser?.name || 'Current Employee'}</span>
-                      <span className="text-[10px] text-slate-500 font-normal">
-                        {currentUser?.position || 'Verified Staff'} · {currentUser?.empId || 'EMP1005'}
+                      <span className="flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{currentUser?.name || 'Current Employee'}</span>
+                      </span>
+                      <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-2 py-0.5 rounded-full">
+                        Visible to You Only
                       </span>
                     </div>
                   </div>
@@ -571,30 +668,30 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Document Description & Summary Notes
+                    Personal Notes / Context (Optional)
                   </label>
                   <textarea
                     rows={2}
                     value={uploadDescription}
                     onChange={(e) => setUploadDescription(e.target.value)}
-                    placeholder="Briefly describe what this document covers to assist coworkers and AI search indexing..."
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium"
+                    placeholder="Add personal notes or context to guide the AI summary..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:border-amber-500 focus:bg-white font-medium"
                   />
                 </div>
 
                 {/* Progress Bar when uploading */}
                 {isUploading && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2 animate-fadeIn">
-                    <div className="flex items-center justify-between text-xs font-semibold text-blue-900">
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 animate-fadeIn">
+                    <div className="flex items-center justify-between text-xs font-semibold text-amber-900">
                       <span className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-                        Parsing content & generating vector embeddings...
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                        Extracting content & generating private AI summary...
                       </span>
                       <span className="font-mono">{uploadProgress}%</span>
                     </div>
-                    <div className="w-full bg-blue-200/70 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-amber-200/70 h-2 rounded-full overflow-hidden">
                       <div
-                        className="bg-blue-600 h-full rounded-full transition-all duration-200"
+                        className="bg-amber-600 h-full rounded-full transition-all duration-200"
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
@@ -604,8 +701,8 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                 {/* Submit / Cancel Buttons */}
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                   <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Instant AI indexing enabled across Knowledge Chat</span>
+                    <Lock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Private document · Never shared with coworkers</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -620,10 +717,10 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                     <button
                       type="submit"
                       disabled={isUploading || !uploadFileName.trim()}
-                      className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-5 py-2 text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      <span>{isUploading ? 'Uploading & Indexing...' : 'Upload & Index Document'}</span>
+                      <span>{isUploading ? 'Summarizing...' : 'Upload & Summarize Document'}</span>
                     </button>
                   </div>
                 </div>
@@ -632,8 +729,6 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-
-                    
 
       {/* 5 Stat Cards with animated hover */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
@@ -726,27 +821,11 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.2 }}
           >
-            <section className="min-h-[540px] rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xs">
-              <div className="mb-5">
-                <h2 className="text-lg font-bold text-slate-900">Document Vault</h2>
-                <p className="text-xs text-slate-500">Browse your accessible documents.</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.map((doc) => (
-                  <button
-                    key={doc.id}
-                    onClick={() => onOpenDocDetail(doc.id)}
-                    className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/40"
-                  >
-                    <FileText className="h-5 w-5 shrink-0 text-blue-600" />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-slate-900">{doc.name}</span>
-                      <span className="block text-xs text-slate-500">{doc.department} · {doc.type}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
+            {/* <ThreeDocumentVault
+              documents={filtered}
+              onOpenDocDetail={onOpenDocDetail}
+              className="h-[540px]"
+            /> */}
           </motion.div>
         ) : viewMode === 'grid' ? (
           <motion.div
@@ -781,10 +860,17 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Ready
-                      </span>
+                      {(doc.isPersonal || doc.accessScope === 'Personal Only') ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <Lock className="w-2.5 h-2.5 text-amber-600" />
+                          Private
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Ready
+                        </span>
+                      )}
                       <button
                         onClick={() => setQuickInspectDoc(doc)}
                         className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-lg transition-colors"
@@ -822,6 +908,20 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                 <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-xs">
                   <span className="text-[11px] text-slate-400">Uploaded {doc.uploadDate}</span>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (doc.summaryText) {
+                          setSummaryModalDoc(doc);
+                        } else {
+                          onOpenDocDetail(doc.id);
+                        }
+                      }}
+                      className="px-2 py-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      title="View AI Summary"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Summary</span>
+                    </button>
                     <button
                       onClick={() => showToast(`Starting download for ${doc.name}`)}
                       className="p-1 text-slate-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
@@ -910,12 +1010,20 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                               {doc.type}
                             </div>
                             <div>
-                              <p
-                                onClick={() => onOpenDocDetail(doc.id)}
-                                className="text-xs font-bold text-slate-900 hover:text-blue-600 cursor-pointer transition-colors"
-                              >
-                                {doc.name}
-                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <p
+                                  onClick={() => onOpenDocDetail(doc.id)}
+                                  className="text-xs font-bold text-slate-900 hover:text-blue-600 cursor-pointer transition-colors"
+                                >
+                                  {doc.name}
+                                </p>
+                                {(doc.isPersonal || doc.accessScope === 'Personal Only') && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
+                                    <Lock className="w-2.5 h-2.5 text-amber-600" />
+                                    Private
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-[11px] text-slate-400 line-clamp-1 max-w-sm">
                                 {doc.description || `${doc.category} document for employee review`}
                               </p>
@@ -970,11 +1078,21 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                             </button>
 
                             <button
-                              onClick={() => onOpenDocDetail(doc.id)}
-                              className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                              title="Summary & 3D Viewer"
+                              onClick={() => {
+                                if (doc.summaryText) {
+                                  setSummaryModalDoc(doc);
+                                } else {
+                                  onOpenDocDetail(doc.id);
+                                }
+                              }}
+                              className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer ${
+                                doc.isPersonal || doc.accessScope === 'Personal Only'
+                                  ? 'text-amber-700 hover:text-amber-800 hover:bg-amber-50 font-bold'
+                                  : 'text-slate-600 hover:text-blue-700 hover:bg-blue-50'
+                              }`}
+                              title="View AI Summary"
                             >
-                              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                               <span>Summary</span>
                             </button>
                           </div>
@@ -1086,6 +1204,134 @@ export const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                   <span>Open Full Detail & 3D Viewer</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Document Summary Modal */}
+      <AnimatePresence>
+        {summaryModalDoc && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              className="bg-white rounded-2xl max-w-xl w-full p-6 border border-slate-200 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => setSummaryModalDoc(null)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-start gap-3.5 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 text-white flex items-center justify-center shadow-md shrink-0">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      <Lock className="w-3 h-3 text-amber-600" />
+                      Personal & Private Document
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {summaryModalDoc.fileSize || '1.8 MB'}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900 leading-snug">
+                    {summaryModalDoc.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Uploaded on {summaryModalDoc.uploadDate} · Visible only to {summaryModalDoc.uploadedBy}
+                  </p>
+                </div>
+              </div>
+
+              {/* Summary Body */}
+              <div className="space-y-4 text-xs">
+                <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-xl">
+                  <h4 className="font-bold text-amber-900 flex items-center gap-1.5 mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    AI Executive Summary
+                  </h4>
+                  <p className="text-slate-700 leading-relaxed font-medium">
+                    {summaryModalDoc.summaryText ||
+                      `Personal summary for ${summaryModalDoc.name}. This document has been processed and indexed into your private workspace.`}
+                  </p>
+                </div>
+
+                {summaryModalDoc.keyTakeaways && summaryModalDoc.keyTakeaways.length > 0 && (
+                  <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <h4 className="font-bold text-slate-800 flex items-center gap-1.5 mb-2.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      Key Takeaways & Insights
+                    </h4>
+                    <ul className="space-y-2">
+                      {summaryModalDoc.keyTakeaways.map((point, i) => (
+                        <li key={i} className="flex items-start gap-2 text-slate-600">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                          <span className="leading-relaxed font-normal">{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 p-2.5 bg-slate-100/70 rounded-xl text-[11px] text-slate-500">
+                  <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>
+                    Privacy scope: <strong>Shown to you only</strong>. Excluded from company-wide searches and coworker directories.
+                  </span>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const textToCopy = `${summaryModalDoc.name}\n\nSummary:\n${summaryModalDoc.summaryText || ''}\n\nKey Takeaways:\n${summaryModalDoc.keyTakeaways?.join('\n') || ''}`;
+                    navigator.clipboard.writeText(textToCopy);
+                    setCopiedSummary(true);
+                    setTimeout(() => setCopiedSummary(false), 2000);
+                  }}
+                  className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  {copiedSummary ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Copy Summary</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSummaryModalDoc(null)}
+                    className="px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      const id = summaryModalDoc.id;
+                      setSummaryModalDoc(null);
+                      onOpenDocDetail(id);
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Open Full Document</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

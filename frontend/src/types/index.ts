@@ -15,6 +15,8 @@ export interface DocumentItem {
   category: string;
   department: string;
   uploadedBy: string;
+  uploaderEmpId?: string;
+  isPersonal?: boolean;
   uploadDate: string;
   status: 'Ready' | 'Processing' | 'Failed';
   accessScope: string;

@@ -13,9 +13,11 @@ import { EmployeeActivity } from './components/employee/EmployeeActivity';
 import { AdminPage } from './components/admin/AdminPage';
 import { INITIAL_EMPLOYEES } from './data/mockData';
 import { EmployeeView, DocumentItem, EmployeeItem } from './types';
+import { useNavigate } from 'react-router-dom';
 
 
 export function App() {
+  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPortal, setCurrentPortal] = useState<'employee' | 'admin'>('employee');
   const [currentUser, setCurrentUser] = useState<EmployeeItem>(
@@ -74,11 +76,15 @@ export function App() {
     setActiveEmployeeView('document-detail');
   };
 
+  
   const handleLogin = (user: EmployeeItem, portal: 'employee' | 'admin' = 'employee') => {
+    console.log('Logged-in user: ', user);
     setCurrentUser(user);
     setCurrentPortal(portal);
     setIsAuthenticated(true);
     setActiveEmployeeView('dashboard');
+
+    navigate(portal === 'admin' ? '/admin' : '/');
   };
 
   const handleSignOut = () => {

@@ -66,7 +66,7 @@ public class EmployeeService {
 
         userRepository.save(user);
 
-        return "Employee craeted successfully";
+        return "Employee created successfully";
 
     }
     public List<User> getAllEmployee(){

@@ -9,12 +9,14 @@ public class EmployeeResponse {
     private String role;
     private String department;
     private String position;
+    private boolean active;
     
     public EmployeeResponse(User user) {
         this.id = user.getId();
         this.employeeId = user.getEmployeeId();
         this.name = user.getName();
         this.role = user.getRole();
+        this.active = user.isActive();
 
         if (user.getDepartment() != null) {
             this.department = user.getDepartment().getName();
@@ -47,6 +49,8 @@ public class EmployeeResponse {
     public String getPosition() {
         return position;
     }
+    public boolean isActive() {
+        return active;
+    }
 
-      
 }

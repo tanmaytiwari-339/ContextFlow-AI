@@ -2,7 +2,7 @@ import React from 'react';
 import { EmployeeItem } from '../../types';
 import AdminLayout from '../common/AdminLayout';
 
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 import AdminDashboard from './AdminDashboard';
 import EmployeePage from './EmployeePage';
@@ -26,7 +26,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     <div className="min-h-screen bg-[#F8FAFC] font-['Plus_Jakarta_Sans',sans-serif]">
       <AdminLayout>
         <Routes>
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={<AdminDashboard currentUser={currentUser} />} />
 
           <Route
             path="/admin/employees"
@@ -62,6 +62,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({
             path="/admin/profile"
             element={<ProfilePage />}
           />
+
+          <Route
+            path="*" 
+            element={<Navigate to="/admin" replace />} 
+          />
+
         </Routes>
       </AdminLayout>
     </div>

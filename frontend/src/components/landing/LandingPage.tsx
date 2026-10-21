@@ -77,24 +77,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         }
       );
 
+      
       const token = response.data;
 
-      localStorage.setItem('token',token);
+      localStorage.setItem('token', token);
 
       const payload = JSON.parse(atob(token.split('.')[1]));
 
       const employeeId = payload.sub;
       const backendRole = payload.role;
 
+      const profileResponse = await axios.get(
+        'http://localhost:8081/api/profile',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const profile = profileResponse.data;
+
       const employee: EmployeeItem = {
         id: employeeId,
         empId: employeeId,
-        name: employeeId,
+        name: profile.name || employeeId,
         email: '',
         phone: '',
-        department: '',
-        position: '',
-        status: 'Active',
+        department: profile.department || '',
+        position: profile.position || '',
+        status: profile.active === false ? 'Inactive' : 'Active',
         lastActive: new Date().toISOString(),
         role: backendRole === 'EMPLOYEE' ? 'Employee' : 'System Admin',
         accessScope:

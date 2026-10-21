@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "../../api/axios";
 
 import {
   Plus,
@@ -20,51 +21,83 @@ function EmployeePage() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
 
-  const [employees, setEmployees] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@company.com",
-      department: "Engineering",
-      position: "Software Engineer",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Sarah Smith",
-      email: "sarah.smith@company.com",
-      department: "Design",
-      position: "UI/UX Designer",
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      email: "michael.brown@company.com",
-      department: "AI & ML",
-      position: "ML Engineer",
-      status: "Active",
-    },
-    {
-      id: 4,
-      name: "Emily Johnson",
-      email: "emily.johnson@company.com",
-      department: "HR",
-      position: "HR Manager",
-      status: "Inactive",
-    },
-  ]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    fetchEmployees();
+    fetchDepartments();
+    fetchPositions()
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await api.get("/api/admin/employees");
+
+      const mappedEmployees = response.data.map((employee) => ({
+        ...employee,
+        empId: employee.employeeId,
+        email: employee.employeeId,
+        status: employee.active ? "Active" : "Inactive",
+      }));
+
+      setEmployees(mappedEmployees);
+    } catch (err) {
+      console.error("Failed to fetch employees:", err);
+
+      setError(
+        err.response?.data?.message ||
+        "Failed to load employees. Please check the backend connection."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await api.get("/api/admin/departments");
+      setDepartments(response.data);
+    } catch (err) {
+      console.error("Failed to fetch departments:", err);
+      setFormError("Could not load departments.");
+    }
+  };
+
+  const fetchPositions = async () => {
+    try {
+      const response = await api.get("/api/admin/positions");
+      setPositions(response.data);
+    } catch (err) {
+      console.error("Failed to fetch positions:", err);
+      setFormError("Could not load positions.");
+    }
+  };
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    department: "",
-    position: "",
-    status: "Active",
+      employeeId: "",
+      name: "",
+      password: "",
+      departmentId: "",
+      positionId: "",
   });
-
   const filteredEmployees = employees.filter((employee) => {
-    const matchesSearch = `${employee.name} ${employee.email} ${employee.department} ${employee.position}`
+    const matchesSearch = [
+      employee.name,
+      employee.employeeId,
+      employee.department,
+      employee.position,
+    ]
+      .filter(Boolean)
+      .join(" ")
       .toLowerCase()
       .includes(search.toLowerCase());
 
@@ -84,63 +117,136 @@ function EmployeePage() {
 
   const resetForm = () => {
     setFormData({
+      employeeId: "",
       name: "",
-      email: "",
-      department: "",
-      position: "",
-      status: "Active",
+      password: "",
+      departmentId: "",
+      positionId: "",
     });
+
+    setFormError("");
     setEditingEmployee(null);
   };
 
-  const handleSubmit = (e) => {
+  
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError("");
 
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.department ||
-      !formData.position
-    ) {
+    if (!formData.name.trim()) {
+      setFormError("Please enter the employee name.");
       return;
     }
 
-    if (editingEmployee) {
-      setEmployees(
-        employees.map((employee) =>
-          employee.id === editingEmployee.id
-            ? {
-                ...employee,
-                ...formData,
-              }
-            : employee
-        )
-      );
-    } else {
-      const newEmployee = {
-        id: Date.now(),
-        ...formData,
-      };
-
-      setEmployees([...employees, newEmployee]);
+    if (!formData.departmentId || !formData.positionId) {
+      setFormError("Please select a department and position.");
+      return;
     }
 
-    resetForm();
-    setShowModal(false);
-    setOpenMenu(null);
+    // Validate additional fields only when creating an employee
+    if (!editingEmployee) {
+      if (!formData.employeeId.trim()) {
+        setFormError("Please enter the employee ID.");
+        return;
+      }
+
+      if (!formData.password.trim()) {
+        setFormError("Please enter an initial password.");
+        return;
+      }
+    }
+
+    setSaving(true);
+
+    try {
+      if (editingEmployee) {
+        // Update an existing employee
+        const response = await api.put(
+          `/api/admin/employees/${editingEmployee.id}`,
+          {
+            name: formData.name.trim(),
+            departmentId: Number(formData.departmentId),
+            positionId: Number(formData.positionId),
+          }
+        );
+
+        setEmployees((previousEmployees) =>
+          previousEmployees.map((employee) =>
+            employee.id === editingEmployee.id
+              ? {
+                  ...employee,
+                  ...response.data,
+                  empId: response.data.employeeId,
+                  email: response.data.employeeId,
+                  status: response.data.active
+                    ? "Active"
+                    : "Inactive",
+                }
+              : employee
+          )
+        );
+      } else {
+        // Create a new employee
+        const response = await api.post("/api/admin/employees", {
+          employeeId: formData.employeeId.trim(),
+          name: formData.name.trim(),
+          password: formData.password,
+          departmentId: Number(formData.departmentId),
+          positionId: Number(formData.positionId),
+        });
+
+        if (
+          typeof response.data === "string" &&
+          response.data.toLowerCase().includes("already exists")
+        ) {
+          setFormError("This employee ID already exists.");
+          return;
+        }
+
+        await fetchEmployees();
+      }
+
+      resetForm();
+      setShowModal(false);
+    } catch (error) {
+      console.error("Employee save error:", error);
+
+      setFormError(
+        error.response?.data?.message ||
+        (typeof error.response?.data === "string"
+          ? error.response.data
+          : "Unable to save employee. Please try again.")
+      );
+    } finally {
+      setSaving(false);
+    }
   };
+
 
   const handleEdit = (employee) => {
     setEditingEmployee(employee);
 
+    const selectedDepartment = departments.find(
+      (item) => item.name === employee.department
+    );
+
+    const selectedPosition = positions.find(
+      (item) => item.name === employee.position
+    );
+
     setFormData({
+      employeeId: employee.employeeId,
       name: employee.name,
-      email: employee.email,
-      department: employee.department,
-      position: employee.position,
-      status: employee.status,
+      password: "",
+      departmentId: selectedDepartment
+        ? String(selectedDepartment.id)
+        : "",
+      positionId: selectedPosition
+        ? String(selectedPosition.id)
+        : "",
     });
 
+    setFormError("");
     setOpenMenu(null);
     setShowModal(true);
   };
@@ -204,7 +310,7 @@ function EmployeePage() {
 
           <input
             type="text"
-            placeholder="Search employees..."
+            placeholder="Search by name or employee ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
@@ -224,7 +330,18 @@ function EmployeePage() {
         </select>
       </div>
 
-      {/* Employees Table */}
+      {loading && (
+        <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+          Loading employees...
+        </p>
+      )}
+
+      {error && (
+        <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+          {error}
+        </p>
+      )}
+
       <div className="overflow-x-auto overflow-y-visible rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <table className="w-full min-w-[800px]">
           <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/70">
@@ -252,7 +369,13 @@ function EmployeePage() {
           </thead>
 
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {filteredEmployees.length > 0 ? (
+            {loading ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-12 text-center text-sm text-slate-500">
+                    Loading employees...
+                  </td>
+                </tr>
+              ) : filteredEmployees.length > 0 ? (
               filteredEmployees.map((employee) => (
                 <tr
                   key={employee.id}
@@ -270,7 +393,7 @@ function EmployeePage() {
                         </p>
 
                         <p className="text-sm text-slate-400 dark:text-slate-500">
-                          {employee.email}
+                          ID: {employee.employeeId}
                         </p>
                       </div>
                     </div>
@@ -392,6 +515,24 @@ function EmployeePage() {
               onSubmit={handleSubmit}
               className="space-y-5 p-6"
             >
+              {/* Employee ID */}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Employee ID / Login ID
+                </label>
+
+                <input
+                  type="text"
+                  name="employeeId"
+                  value={formData.employeeId}
+                  onChange={handleInputChange}
+                  placeholder="EMP1004"
+                  required
+                className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              {/* Full Name */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Full Name
@@ -403,25 +544,34 @@ function EmployeePage() {
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="Enter employee name"
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-indigo-500/20"
+                  required
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 />
               </div>
 
+              {/* Initial Password */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Email
-                </label>
-
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="employee@company.com"
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-indigo-500/20"
-                />
+                {!editingEmployee && (
+                  <>
+                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Initial Password
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="Enter initial password"
+                      autoComplete="new-password"
+                      required
+                      disabled={!!editingEmployee}
+                      className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    />
+                  </>
+                )}
               </div>
 
+              {/* Department and Position */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -429,16 +579,19 @@ function EmployeePage() {
                   </label>
 
                   <select
-                    name="department"
-                    value={formData.department}
+                    name="departmentId"
+                    value={formData.departmentId}
                     onChange={handleInputChange}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    required
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   >
-                    <option value="">Select</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Design">Design</option>
-                    <option value="AI & ML">AI & ML</option>
-                    <option value="HR">HR</option>
+                    <option value="">Select department</option>
+
+                    {departments.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -447,32 +600,30 @@ function EmployeePage() {
                     Position
                   </label>
 
-                  <input
-                    type="text"
-                    name="position"
-                    value={formData.position}
+                  <select
+                    name="positionId"
+                    value={formData.positionId}
                     onChange={handleInputChange}
-                    placeholder="Software Engineer"
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-indigo-500/20"
-                  />
+                    required
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    <option value="">Select position</option>
+
+                    {positions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Status
-                </label>
-
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
+              {/* Error message */}
+              {formError && (
+                <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                  {formError}
+                </p>
+              )}
 
               <div className="flex justify-end gap-3 border-t border-slate-100 pt-5 dark:border-slate-800">
                 <button
@@ -488,9 +639,14 @@ function EmployeePage() {
 
                 <button
                   type="submit"
-                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+                  disabled={saving}
+                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
                 >
-                  {editingEmployee ? "Save Changes" : "Add Employee"}
+                  {saving
+                    ? "Saving..."
+                    : editingEmployee
+                      ? "Save Changes"
+                      : "Add Employee"}
                 </button>
               </div>
             </form>

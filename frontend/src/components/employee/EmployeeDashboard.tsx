@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect , useState } from 'react';
 import {
   FileText,
   MessageSquare,
@@ -11,6 +11,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { DocumentItem, EmployeeItem } from '../../types';
+import api from '../../api/axios';
 
 interface EmployeeDashboardProps {
   currentUser?: EmployeeItem;
@@ -31,6 +32,31 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
   onNavigateToActivity,
   onOpenSearch,
 }) => {
+
+  const [chatCount, setChatCount] = useState(0);
+
+  
+  const hour = new Date().getHours();
+
+  const greeting =
+    hour < 12
+      ? 'Good Morning'
+      : hour < 17
+      ? 'Good Afternoon'
+      : 'Good Evening';
+
+  useEffect(() => {
+    const loadChatCount = async () => {
+      try {
+        const response = await api.get('/api/chat/count');
+        setChatCount(response.data);
+      } catch (error) {
+        console.error('Failed to load chat count:', error);
+      }
+    };
+
+    loadChatCount();
+  }, []);
   const stats = [
     {
       label: 'Accessible Documents',
@@ -41,7 +67,7 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
     },
     {
       label: 'AI Chats',
-      value: '18',
+      value: String(chatCount),
       icon: MessageSquare,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50/80',
@@ -109,10 +135,10 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
 
         <div className="relative z-10 max-w-xl">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100/90 border border-blue-200 text-[11px] font-bold text-blue-700 mb-2">
-            <span>Good Morning</span>
+            <span>{greeting}</span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2 drop-shadow-2xs">
-            {currentUser?.name || 'Tanmay Tiwari'} <span className="animate-wiggle">👋</span>
+            {currentUser?.name || 'User'} <span className="animate-wiggle">👋</span>
           </h1>
           <p className="text-xs font-semibold text-slate-700 mt-1">
             {currentUser?.department || 'Engineering'} Department <span className="text-slate-400">·</span> {currentUser?.position || 'Software Developer'}
@@ -406,4 +432,5 @@ export const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({
       </div>
     </div>
   );
+
 };

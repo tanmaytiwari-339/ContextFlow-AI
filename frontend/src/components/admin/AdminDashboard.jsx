@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import api from "../../api/axios";
 
 import {
   Users,
@@ -18,13 +21,48 @@ import {
   Activity,
 } from "lucide-react";
 
-function AdminDashboard() {
+
+
+function AdminDashboard({ currentUser }) {
+
   const navigate = useNavigate();
 
+  const hour = new Date().getHours();
+
+  const greeting =
+    hour < 12
+      ? "Good morning"
+      : hour < 17
+        ? "Good afternoon"
+        : "Good evening";
+
+  const [employeeCount, setEmployeeCount] = useState(0);
+  const [departmentCount, setDepartmentCount] = useState(0);
+  const [positionCount, setPositionCount] = useState(0);
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+        try {
+        
+          const employeeResponse = await api.get("/api/admin/employees");
+          setEmployeeCount(employeeResponse.data.length);
+
+          const departmentResponse = await api.get("/api/admin/departments");
+          setDepartmentCount(departmentResponse.data.length);
+
+          const positionResponse = await api.get("/api/admin/positions");
+          setPositionCount(positionResponse.data.length);
+        } catch (error) {
+          console.error("Failed to load dashboard data:", error);
+        }
+      };
+
+      loadDashboardData();
+    }, []);
   const stats = [
     {
       title: "Total Employees",
-      value: "124",
+      value: String(employeeCount),
       change: "↑ 12% from last month",
       icon: Users,
       iconBg: "bg-blue-50 dark:bg-blue-500/10",
@@ -42,7 +80,7 @@ function AdminDashboard() {
     },
     {
       title: "Departments",
-      value: "8",
+      value: String(departmentCount),
       change: "No change",
       icon: Building2,
       iconBg: "bg-purple-50 dark:bg-purple-500/10",
@@ -51,7 +89,7 @@ function AdminDashboard() {
     },
     {
       title: "Positions",
-      value: "16",
+      value: String(positionCount),
       change: "↑ 6% from last month",
       icon: BriefcaseBusiness,
       iconBg: "bg-violet-50 dark:bg-violet-500/10",
@@ -169,11 +207,11 @@ function AdminDashboard() {
             </div>
 
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Good Morning,
+              {greeting},
             </p>
 
             <h1 className="mt-1 text-3xl font-bold tracking-tight text-blue-950 dark:text-white sm:text-4xl">
-              Admin 👋
+              {currentUser?.name || "Admin"} 👋
             </h1>
 
             <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">

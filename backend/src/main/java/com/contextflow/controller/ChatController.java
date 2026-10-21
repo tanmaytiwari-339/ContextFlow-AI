@@ -7,15 +7,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.contextflow.dto.ChatResponse;
 import com.contextflow.service.ChatService;
+import com.contextflow.service.ChatMessageService;
 
 @RestController 
 @RequestMapping("/api/chat")
 public class ChatController {
 
     private final ChatService chatService;
+    private final ChatMessageService chatMessageService;
 
-    public ChatController(ChatService chatService){
+    public ChatController(
+            ChatService chatService,
+            ChatMessageService chatMessageService) {
+
         this.chatService = chatService;
+        this.chatMessageService = chatMessageService;
     }
 
     @GetMapping
@@ -24,6 +30,11 @@ public class ChatController {
             @RequestParam String question) {
 
         return chatService.askQuestion(sessionId, question);
+    }
+
+    @GetMapping("/count")
+    public long getChatCount() {
+        return chatMessageService.getMyChatCount();
     }
     
 }

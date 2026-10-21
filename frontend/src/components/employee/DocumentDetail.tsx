@@ -50,6 +50,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(document.summary || null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [isLoadingDocument, setIsLoadingDocument] = useState(false);
 
   useEffect(() => {
     setSummary(document.summary || null);
@@ -109,19 +110,26 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
   };
 
   const handleViewDocument = async () => {
+
+    if (pdfUrl) return;
+
     try {
-      const response = await api.get(`/api/documents/${document.id}/download`, {
-        responseType: 'blob',
-      });
+      setIsLoadingDocument(true);
+
+      const response = await api.get(
+        `/api/documents/${document.id}/download`,
+        { responseType: 'blob' }
+      );
 
       const url = window.URL.createObjectURL(response.data);
       setPdfUrl(url);
     } catch (error) {
       console.error('Failed to load document:', error);
-      showToast('Failed to open document.');
+      showToast('Failed to open document. Please try again.');
+    } finally {
+      setIsLoadingDocument(false);
     }
-};
-
+  };
 
 
   const handleRegenerate = async () => {
@@ -430,25 +438,58 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({
                   <span className="text-[11px] text-slate-400 font-mono">100% Zoom · High-DPI</span>
                 </div>
                 <div className="bg-slate-50 rounded-xl min-h-[420px] border border-slate-200 overflow-hidden">
-                  {pdfUrl ? (
+
+                  {isLoadingDocument ? (
+                    <div className="min-h-[420px] flex flex-col items-center justify-center">
+                      <RotateCw className="w-8 h-8 text-blue-500 animate-spin mb-3" />
+                      <h4 className="text-sm font-bold text-slate-800">
+                        Loading Document...
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Opening {document.name}
+                      </p>
+                    </div>
+                  ) : pdfUrl && document.type === 'PDF' ? (
                     <iframe
                       src={pdfUrl}
                       title={document.name}
                       className="w-full h-[700px]"
                     />
+                  ) : pdfUrl ? (
+                    <div className="min-h-[420px] flex flex-col items-center justify-center text-center p-6">
+                      <FileText className="w-12 h-12 text-blue-500 mb-3" />
+                      <h4 className="text-sm font-bold text-slate-800">
+                        Preview not supported for this file type
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-2">
+                        You can download {document.name} to open it.
+                      </p>
+                      <button
+                        onClick={handleDownload}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold"
+                      >
+                        Download Document
+                      </button>
+                    </div>
                   ) : (
                     <div className="min-h-[420px] flex flex-col items-center justify-center text-center">
                       <FileText className="w-12 h-12 text-blue-500 mb-3" />
-
                       <h4 className="text-sm font-bold text-slate-800">
-                        Loading Document...
+                        Document preview not loaded
                       </h4>
-
-                      <p className="text-xs text-slate-500 max-w-sm mt-1">
-                        Opening {document.name}
+                      <p className="text-xs text-slate-500 mt-1">
+                        Select Document View to load the file.
                       </p>
+                      <button
+                        onClick={handleViewDocument}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold"
+                      >
+                        Load Preview
+                      </button>
                     </div>
                   )}
+
+
                 </div>
               </motion.div>
             )}

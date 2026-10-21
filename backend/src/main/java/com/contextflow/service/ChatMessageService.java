@@ -8,6 +8,10 @@ import com.contextflow.entity.ChatMessage;
 import com.contextflow.entity.ChatSession;
 import com.contextflow.repository.ChatMessageRepository;
 import com.contextflow.repository.ChatSessionRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import com.contextflow.entity.User;
 
 @Service
 public class ChatMessageService {
@@ -45,4 +49,16 @@ public class ChatMessageService {
         return chatMessageRepository
                 .findByChatSessionOrderByCreatedAtAsc(session);
     }
+
+    public long getMyChatCount() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        User user = (User) authentication.getPrincipal();
+
+        return chatMessageRepository.countByChatSessionUser(user);
+        }
+
+        
 }

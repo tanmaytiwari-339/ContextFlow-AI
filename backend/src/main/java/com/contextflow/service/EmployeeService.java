@@ -15,6 +15,12 @@ import com.contextflow.entity.User;
 import com.contextflow.repository.DepartmentRepository;
 import com.contextflow.repository.PositionRepository;
 import com.contextflow.repository.UserRepository;
+import com.contextflow.repository.DocumentRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import com.contextflow.repository.ActivityRepository;
+import com.contextflow.repository.DocumentAccessRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service 
 public class EmployeeService {
@@ -23,17 +29,27 @@ public class EmployeeService {
     private final DepartmentRepository departmentRepository;
     private final PositionRepository positionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DocumentRepository documentRepository;
+    private final ActivityRepository activityRepository;
+    private final DocumentAccessRepository documentAccessRepository;
 
     public EmployeeService(
             UserRepository userRepository,
             DepartmentRepository departmentRepository,
             PositionRepository positionRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            DocumentRepository documentRepository,
+            ActivityRepository activityRepository,
+            DocumentAccessRepository documentAccessRepository
+        ) {
 
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.passwordEncoder = passwordEncoder;
+        this.documentRepository = documentRepository;
+        this.activityRepository = activityRepository;
+        this.documentAccessRepository = documentAccessRepository;
     }
 
     public String createEmployee(CreateEmployeeRequest request){
@@ -109,5 +125,39 @@ public class EmployeeService {
         return new EmployeeResponse(user);
         
     }
+    @Transactional 
+    public void deleteEmployee(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Employee not found"
+                ));
+
+        if (!"EMPLOYEE".equals(user.getRole())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only employee accounts can be deleted here"
+            );
+        }
+
+        if (documentRepository.existsByUser_Id(id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot delete this employee because they own documents. Reassign or remove their documents first."
+            );
+        }
+
+        if (activityRepository.existsByUser_Id(id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot delete this employee because activity history exists. Deactivate the account instead."
+            );
+        }
+        documentAccessRepository.deleteByEmployee_Id(id);
+        userRepository.delete(user);
+    }
+
+
+
 
 }

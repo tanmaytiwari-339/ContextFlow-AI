@@ -263,16 +263,41 @@ function EmployeePage() {
     setShowDeleteModal(true);
   };
 
-  const handleDeleteConfirm = () => {
-    setEmployees(
-      employees.filter(
-        (employee) => employee.id !== selectedEmployee.id
-      )
-    );
+  
+  const handleDeleteConfirm = async () => {
+      if (!selectedEmployee) return;
 
-    setSelectedEmployee(null);
-    setShowDeleteModal(false);
-  };
+      try {
+        await api.delete(
+          `/api/admin/employees/${selectedEmployee.id}`
+        );
+
+        // Update the list only after the backend confirms deletion
+        setEmployees((previousEmployees) =>
+          previousEmployees.filter(
+            (employee) => employee.id !== selectedEmployee.id
+          )
+        );
+
+        setSelectedEmployee(null);
+        setShowDeleteModal(false);
+        setError("");
+      } catch (err) {
+        console.error("Failed to delete employee:", err);
+
+        const message =
+          err.response?.data?.detail ||
+          err.response?.data?.message ||
+          (typeof err.response?.data === "string"
+            ? err.response.data
+            : "Failed to delete employee. Please try again.");
+
+        setError(message);
+        setShowDeleteModal(false);
+        setSelectedEmployee(null);
+      }
+    };
+
 
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white sm:px-6 lg:px-12 lg:py-8">

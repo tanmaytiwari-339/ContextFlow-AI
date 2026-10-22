@@ -50,4 +50,9 @@ public class EmployeeController {
             @RequestBody UpdateEmployeeStatusRequest request){
         return employeeService.updateEmployeeStatus(id, request);
     }
+    @DeleteMapping("/{id}")
+    public String deleteEmployee(@PathVariable Long id) {
+        employeeService.deleteEmployee(id);
+        return "Employee deleted successfully";
+    }
 }

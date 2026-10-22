@@ -1,3 +1,4 @@
+
 package com.contextflow.repository;
 
 import com.contextflow.entity.Activity;
@@ -15,4 +16,6 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
             User user,
             List<String> actions
     );
+
+    boolean existsByUser_Id(Long userId);
 }

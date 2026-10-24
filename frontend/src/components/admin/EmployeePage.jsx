@@ -162,7 +162,7 @@ function EmployeePage() {
       if (editingEmployee) {
         // Update an existing employee
         const response = await api.put(
-          `/api/admin/employees/${editingEmployee.id}`,
+          `admin/employees/${editingEmployee.id}`,
           {
             name: formData.name.trim(),
             departmentId: Number(formData.departmentId),
@@ -269,7 +269,7 @@ function EmployeePage() {
 
       try {
         await api.delete(
-          `/api/admin/employees/${selectedEmployee.id}`
+          `admin/employees/${selectedEmployee.id}`
         );
 
         // Update the list only after the backend confirms deletion

@@ -24,49 +24,59 @@ function DepartmentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  
   const fetchDepartments = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const response = await api.get("/admin/departments");
-      const departmentData = Array.isArray(response.data)
-        ? response.data
+      // Fetch departments and employees only once each
+      const [departmentsResponse, employeesResponse] = await Promise.all([
+        api.get("/admin/departments"),
+        api.get("/admin/employees"),
+      ]);
+
+      const departmentData = Array.isArray(departmentsResponse.data)
+        ? departmentsResponse.data
         : [];
 
-      const departmentsWithCounts = await Promise.all(
-        departmentData.map(async (department) => {
-          try {
-            const employeesResponse = await api.get("/admin/employees");
+      const employees = Array.isArray(employeesResponse.data)
+        ? employeesResponse.data
+        : [];
 
-            const employees = Array.isArray(employeesResponse.data)
-              ? employeesResponse.data
-              : [];
+      const departmentsWithCounts = departmentData.map((department) => {
+        const employeeCount = employees.filter((employee) => {
+          // Match by department ID when available
+          const employeeDepartmentId =
+            employee.departmentId ?? employee.department?.id;
 
-            const employeeCount = employees.filter(
-              (employee) =>
-                employee.departmentId === department.id ||
-                employee.department?.id === department.id
-            ).length;
-
-            return {
-              ...department,
-              description: department.description || "",
-              manager: department.manager || "Not assigned",
-              employeeCount,
-              status: department.status || "Active",
-            };
-          } catch {
-            return {
-              ...department,
-              description: department.description || "",
-              manager: department.manager || "Not assigned",
-              employeeCount: 0,
-              status: department.status || "Active",
-            };
+          if (
+            employeeDepartmentId != null &&
+            String(employeeDepartmentId) === String(department.id)
+          ) {
+            return true;
           }
-        })
-      );
+
+          // Otherwise, match by department name
+          const employeeDepartmentName =
+            typeof employee.department === "string"
+              ? employee.department
+              : employee.department?.name;
+
+          return (
+            employeeDepartmentName?.trim().toLowerCase() ===
+            department.name?.trim().toLowerCase()
+          );
+        }).length;
+
+        return {
+          ...department,
+          description: department.description || "",
+          manager: department.manager || "Not assigned",
+          employeeCount,
+          status: department.status || "Active",
+        };
+      });
 
       setDepartments(departmentsWithCounts);
     } catch (err) {
@@ -76,6 +86,7 @@ function DepartmentPage() {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchDepartments();
@@ -117,7 +128,7 @@ function DepartmentPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name.trim) {
+    if (!formData.name.trim()) {
       return;
     }
 

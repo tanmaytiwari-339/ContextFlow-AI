@@ -1,3 +1,4 @@
+
 package com.contextflow.controller;
 
 import java.util.List;
@@ -25,5 +26,17 @@ public class PositionController {
     @GetMapping
     public List<Position> getAllPositions() {
         return positionService.getAllPositions();
+    }
+
+    @PutMapping("/{id}")
+    public Position updatePosition(
+            @PathVariable Long id,
+            @RequestBody Position position) {
+        return positionService.updatePosition(id, position);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deletePosition(@PathVariable Long id) {
+        positionService.deletePosition(id);
     }
 }

@@ -1,4 +1,6 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
+import api from "../../api/axios";
 
 import {
   Plus,
@@ -20,48 +22,11 @@ function PositionPage() {
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [editingPosition, setEditingPosition] = useState(null);
 
-  const [positions, setPositions] = useState([
-    {
-      id: 1,
-      title: "Software Engineer",
-      department: "Engineering",
-      description: "Develop and maintain software applications.",
-      employees: 24,
-      status: "Active",
-    },
-    {
-      id: 2,
-      title: "Senior Software Engineer",
-      department: "Engineering",
-      description: "Lead software development and technical initiatives.",
-      employees: 12,
-      status: "Active",
-    },
-    {
-      id: 3,
-      title: "UI/UX Designer",
-      department: "Design",
-      description: "Design user interfaces and digital experiences.",
-      employees: 8,
-      status: "Active",
-    },
-    {
-      id: 4,
-      title: "ML Engineer",
-      department: "AI & ML",
-      description: "Build and deploy machine learning solutions.",
-      employees: 10,
-      status: "Active",
-    },
-    {
-      id: 5,
-      title: "HR Manager",
-      department: "HR",
-      description: "Manage employee relations and HR operations.",
-      employees: 4,
-      status: "Inactive",
-    },
-  ]);
+  const [positions, setPositions] = useState([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -71,23 +36,57 @@ function PositionPage() {
     status: "Active",
   });
 
+  // Load positions from the backend
+  const fetchPositions = async () => {
+    try {
+      setError("");
+
+      const response = await api.get("/admin/positions");
+
+      const mappedPositions = response.data.map((position) => ({
+        id: position.id,
+        title: position.name,
+        department: "—",
+        description: "",
+        employees: 0,
+        status: "Active",
+      }));
+
+      setPositions(mappedPositions);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.response?.data?.message ||
+          err.response?.data?.title ||
+          "Failed to load positions. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPositions();
+  }, []);
+
   const filteredPositions = positions.filter((position) => {
     const matchesSearch = `${position.title} ${position.department} ${position.description}`
       .toLowerCase()
       .includes(search.toLowerCase());
 
-    const matchesDepartment =
-      department === "All Departments" ||
-      position.department === department;
+    // Department filtering is not supported by the current backend model.
+    const matchesDepartment = department === "All Departments";
 
     return matchesSearch && matchesDepartment;
   });
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   };
 
   const resetForm = () => {
@@ -102,41 +101,51 @@ function PositionPage() {
     setEditingPosition(null);
   };
 
-  const handleSubmit = (e) => {
+  // Create or update a position in MySQL
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.department) {
+    if (!formData.title.trim()) {
+      setError("Position title is required.");
       return;
     }
 
-    if (editingPosition) {
-      setPositions(
-        positions.map((position) =>
-          position.id === editingPosition.id
-            ? {
-                ...position,
-                ...formData,
-                employees: Number(formData.employees),
-              }
-            : position
-        )
-      );
-    } else {
-      const newPosition = {
-        id: Date.now(),
-        ...formData,
-        employees: Number(formData.employees),
+    try {
+      setSaving(true);
+      setError("");
+
+      const payload = {
+        name: formData.title.trim(),
       };
 
-      setPositions([...positions, newPosition]);
-    }
+      if (editingPosition) {
+        await api.put(
+          `/admin/positions/${editingPosition.id}`,
+          payload
+        );
+      } else {
+        await api.post("/admin/positions", payload);
+      }
 
-    resetForm();
-    setShowModal(false);
-    setOpenMenu(null);
+      await fetchPositions();
+
+      resetForm();
+      setShowModal(false);
+      setOpenMenu(null);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.response?.data?.message ||
+          err.response?.data?.title ||
+          "Failed to save position."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = (position) => {
+    setError("");
     setEditingPosition(position);
 
     setFormData({
@@ -158,20 +167,36 @@ function PositionPage() {
   };
 
   const handleDeleteClick = (position) => {
+    setError("");
     setSelectedPosition(position);
     setOpenMenu(null);
     setShowDeleteModal(true);
   };
 
-  const handleDeleteConfirm = () => {
-    setPositions(
-      positions.filter(
-        (position) => position.id !== selectedPosition.id
-      )
-    );
+  // Delete a position from MySQL
+  const handleDeleteConfirm = async () => {
+    if (!selectedPosition) return;
 
-    setSelectedPosition(null);
-    setShowDeleteModal(false);
+    try {
+      setDeleting(true);
+      setError("");
+
+      await api.delete(`/admin/positions/${selectedPosition.id}`);
+
+      setShowDeleteModal(false);
+      setSelectedPosition(null);
+
+      await fetchPositions();
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.response?.data?.message ||
+          err.response?.data?.title ||
+          "Failed to delete position."
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -190,6 +215,7 @@ function PositionPage() {
 
         <button
           onClick={() => {
+            setError("");
             resetForm();
             setShowModal(true);
           }}
@@ -199,6 +225,34 @@ function PositionPage() {
           Add Position
         </button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <p>{error}</p>
+
+            <button
+              type="button"
+              onClick={() => setError("")}
+              className="shrink-0"
+              aria-label="Dismiss error"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Message */}
+      {loading && (
+        <p className="mb-4 text-sm text-slate-500">
+          Loading positions...
+        </p>
+      )}
 
       {/* Search + Filter */}
       <div className="mb-6 flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -225,7 +279,7 @@ function PositionPage() {
           <option>All Departments</option>
           <option>Engineering</option>
           <option>Design</option>
-          <option>AI & ML</option>
+          <option>AI &amp; ML</option>
           <option>HR</option>
         </select>
       </div>
@@ -258,7 +312,7 @@ function PositionPage() {
           </thead>
 
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {filteredPositions.length > 0 ? (
+            {!loading && filteredPositions.length > 0 ? (
               filteredPositions.map((position) => (
                 <tr
                   key={position.id}
@@ -330,9 +384,7 @@ function PositionPage() {
                           </button>
 
                           <button
-                            onClick={() =>
-                              handleDeleteClick(position)
-                            }
+                            onClick={() => handleDeleteClick(position)}
                             className="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
                           >
                             <Trash2 size={16} />
@@ -344,7 +396,7 @@ function PositionPage() {
                   </td>
                 </tr>
               ))
-            ) : (
+            ) : !loading ? (
               <tr>
                 <td colSpan="5" className="px-6 py-12 text-center">
                   <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -352,12 +404,11 @@ function PositionPage() {
                   </p>
 
                   <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-                    Try searching with a different position or
-                    department.
+                    Try searching with a different position.
                   </p>
                 </td>
               </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>
@@ -369,9 +420,7 @@ function PositionPage() {
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
               <div>
                 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
-                  {editingPosition
-                    ? "Edit Position"
-                    : "Add Position"}
+                  {editingPosition ? "Edit Position" : "Add Position"}
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
@@ -385,6 +434,7 @@ function PositionPage() {
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
+                  setError("");
                 }}
                 className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
               >
@@ -392,10 +442,7 @@ function PositionPage() {
               </button>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-5 p-6"
-            >
+            <form onSubmit={handleSubmit} className="space-y-5 p-6">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Position Title
@@ -407,78 +454,16 @@ function PositionPage() {
                   value={formData.title}
                   onChange={handleInputChange}
                   placeholder="Software Engineer"
+                  required
                   className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-indigo-500/20"
                 />
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Department
-                </label>
-
-                <select
-                  name="department"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                >
-                  <option value="">Select Department</option>
-                  <option value="Engineering">
-                    Engineering
-                  </option>
-                  <option value="Design">Design</option>
-                  <option value="AI & ML">AI & ML</option>
-                  <option value="HR">HR</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Description
-                </label>
-
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Describe the responsibilities of this position..."
-                  rows="4"
-                  className="w-full resize-none rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-indigo-500/20"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Employees
-                  </label>
-
-                  <input
-                    type="number"
-                    name="employees"
-                    min="0"
-                    value={formData.employees}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:ring-indigo-500/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Status
-                  </label>
-
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
+              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Only the position title is currently saved in the database.
+                Department, description, employee count, and status are not
+                persisted by the current backend.
+              </p>
 
               <div className="flex justify-end gap-3 border-t border-slate-100 pt-5 dark:border-slate-700">
                 <button
@@ -486,6 +471,7 @@ function PositionPage() {
                   onClick={() => {
                     setShowModal(false);
                     resetForm();
+                    setError("");
                   }}
                   className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
@@ -494,11 +480,14 @@ function PositionPage() {
 
                 <button
                   type="submit"
-                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
+                  disabled={saving}
+                  className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {editingPosition
-                    ? "Save Changes"
-                    : "Add Position"}
+                  {saving
+                    ? "Saving..."
+                    : editingPosition
+                      ? "Save Changes"
+                      : "Add Position"}
                 </button>
               </div>
             </form>
@@ -550,8 +539,7 @@ function PositionPage() {
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {selectedPosition.description ||
-                    "No description provided."}
+                  {selectedPosition.description || "Not stored yet."}
                 </p>
               </div>
 
@@ -570,13 +558,7 @@ function PositionPage() {
                   Status
                 </p>
 
-                <span
-                  className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-medium ${
-                    selectedPosition.status === "Active"
-                      ? "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400"
-                      : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                  }`}
-                >
+                <span className="mt-1 inline-block rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-600 dark:bg-green-500/10 dark:text-green-400">
                   {selectedPosition.status}
                 </span>
               </div>
@@ -621,17 +603,20 @@ function PositionPage() {
                 onClick={() => {
                   setShowDeleteModal(false);
                   setSelectedPosition(null);
+                  setError("");
                 }}
-                className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                disabled={deleting}
+                className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleDeleteConfirm}
-                className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700"
+                disabled={deleting}
+                className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Delete Position
+                {deleting ? "Deleting..." : "Delete Position"}
               </button>
             </div>
           </div>

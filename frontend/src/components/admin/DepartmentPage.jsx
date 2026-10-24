@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "../../api/axios";
 
 import {
   Plus,
@@ -13,56 +14,72 @@ import {
 
 function DepartmentPage() {
   const [search, setSearch] = useState("");
-
-  const [departments, setDepartments] = useState([
-    {
-      id: 1,
-      name: "Engineering",
-      description: "Software development and technology",
-      manager: "John Doe",
-      employeeCount: 42,
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Design",
-      description: "Product and user experience design",
-      manager: "Sarah Smith",
-      employeeCount: 18,
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "AI & ML",
-      description: "Artificial intelligence and machine learning",
-      manager: "Michael Brown",
-      employeeCount: 24,
-      status: "Active",
-    },
-    {
-      id: 4,
-      name: "Human Resources",
-      description: "Employee relations and recruitment",
-      manager: "Emily Johnson",
-      employeeCount: 12,
-      status: "Active",
-    },
-    {
-      id: 5,
-      name: "Finance",
-      description: "Financial planning and accounting",
-      manager: "David Wilson",
-      employeeCount: 8,
-      status: "Inactive",
-    },
-  ]);
-
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [editingDepartment, setEditingDepartment] = useState(null);
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await api.get("/admin/departments");
+      const departmentData = Array.isArray(response.data)
+        ? response.data
+        : [];
+
+      const departmentsWithCounts = await Promise.all(
+        departmentData.map(async (department) => {
+          try {
+            const employeesResponse = await api.get("/admin/employees");
+
+            const employees = Array.isArray(employeesResponse.data)
+              ? employeesResponse.data
+              : [];
+
+            const employeeCount = employees.filter(
+              (employee) =>
+                employee.departmentId === department.id ||
+                employee.department?.id === department.id
+            ).length;
+
+            return {
+              ...department,
+              description: department.description || "",
+              manager: department.manager || "Not assigned",
+              employeeCount,
+              status: department.status || "Active",
+            };
+          } catch {
+            return {
+              ...department,
+              description: department.description || "",
+              manager: department.manager || "Not assigned",
+              employeeCount: 0,
+              status: department.status || "Active",
+            };
+          }
+        })
+      );
+
+      setDepartments(departmentsWithCounts);
+    } catch (err) {
+      console.error("Failed to load departments:", err);
+      setError("Unable to load departments. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -97,45 +114,41 @@ function DepartmentPage() {
     setEditingDepartment(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.name ||
-      !formData.description ||
-      !formData.manager
-    ) {
+    if (!formData.name.trim) {
       return;
     }
 
-    const departmentData = {
-      ...formData,
-      employeeCount: Number(formData.employeeCount),
-    };
+    try{
+      setError("");
 
-    if (editingDepartment) {
-      setDepartments(
-        departments.map((department) =>
-          department.id === editingDepartment.id
-            ? {
-                ...department,
-                ...departmentData,
-              }
-            : department
-        )
-      );
-    } else {
-      const newDepartment = {
-        id: Date.now(),
-        ...departmentData,
+      const departmentData = {
+        name: formData.name.trim(),
       };
 
-      setDepartments([...departments, newDepartment]);
-    }
+      if(editingDepartment){
+        await api.put(
+          `/admin/departments/${editingDepartment.id}`,
+          departmentData
+        );
+      }else{
+        await api.post("/admin/departments",departmentData);
+      }
+      await fetchDepartments();
 
-    resetForm();
-    setShowModal(false);
-    setOpenMenu(null);
+      resetForm();
+      setShowModal(false);
+      setOpenMenu(null);
+    } catch(err) {
+      console.error("failed to save department:",err);
+
+      setError(
+        err.response?.data?.message ||
+        "Unable to save department. Please try again."
+      );
+    }
   };
 
   const handleView = (department) => {
@@ -165,15 +178,35 @@ function DepartmentPage() {
     setShowDeleteModal(true);
   };
 
-  const handleDeleteConfirm = () => {
-    setDepartments(
-      departments.filter(
-        (department) => department.id !== selectedDepartment.id
-      )
-    );
+  const handleDeleteConfirm = async () => {
+    
+    if(!selectedDepartment){
+      return;
+    }
 
-    setSelectedDepartment(null);
-    setShowDeleteModal(false);
+    try{
+      setError("");
+
+      await api.delete(
+        `/admin/departments/${selectedDepartment.id}`
+      );
+
+      setShowDeleteModal(false);
+      setSelectedDepartment(null);
+      setOpenMenu(null);
+
+      await fetchDepartments();
+    } catch (err) {
+
+      console.error("Failed to delete department:", err);
+
+      setError(
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        "Cannot delete this department. Please check whether employees are assigned to it."
+      );
+
+    }
   };
 
   return (
@@ -221,6 +254,25 @@ function DepartmentPage() {
       </div>
 
       {/* Departments Table */}
+
+      {loading && (
+        <p className="mb-4 text-sm text-slate-500">
+          Loading departments...
+        </p>
+      )}
+
+      {error && (
+        <div className="mb-4 flex items-center justify-between rounded-lg bg-red-50 p-3 text-sm text-red-600">
+          <span>{error}</span>
+          <button
+            onClick={fetchDepartments}
+            className="font-medium underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <div className="overflow-x-auto overflow-y-visible rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <table className="w-full min-w-[850px]">
           <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/70">

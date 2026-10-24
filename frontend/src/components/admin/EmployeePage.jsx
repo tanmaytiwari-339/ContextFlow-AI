@@ -40,7 +40,7 @@ function EmployeePage() {
       setLoading(true);
       setError("");
 
-      const response = await api.get("/api/admin/employees");
+      const response = await api.get("admin/employees");
 
       const mappedEmployees = response.data.map((employee) => ({
         ...employee,
@@ -64,7 +64,7 @@ function EmployeePage() {
 
   const fetchDepartments = async () => {
     try {
-      const response = await api.get("/api/admin/departments");
+      const response = await api.get("admin/departments");
       setDepartments(response.data);
     } catch (err) {
       console.error("Failed to fetch departments:", err);
@@ -74,7 +74,7 @@ function EmployeePage() {
 
   const fetchPositions = async () => {
     try {
-      const response = await api.get("/api/admin/positions");
+      const response = await api.get("admin/positions");
       setPositions(response.data);
     } catch (err) {
       console.error("Failed to fetch positions:", err);

@@ -44,13 +44,13 @@ function AdminDashboard({ currentUser }) {
     const loadDashboardData = async () => {
         try {
         
-          const employeeResponse = await api.get("/api/admin/employees");
+          const employeeResponse = await api.get("admin/employees");
           setEmployeeCount(employeeResponse.data.length);
 
-          const departmentResponse = await api.get("/api/admin/departments");
+          const departmentResponse = await api.get("admin/departments");
           setDepartmentCount(departmentResponse.data.length);
 
-          const positionResponse = await api.get("/api/admin/positions");
+          const positionResponse = await api.get("admin/positions");
           setPositionCount(positionResponse.data.length);
         } catch (error) {
           console.error("Failed to load dashboard data:", error);
